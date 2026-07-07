@@ -51,7 +51,7 @@ describe("ThemeProvider", () => {
     expect(window.localStorage.getItem("groweasy-theme")).toBe("dark");
   });
 
-  it("falls back to the system dark preference when no saved theme exists", async () => {
+  it("defaults to light when no saved theme exists", async () => {
     mockMatchMedia({ dark: true });
 
     render(
@@ -61,8 +61,8 @@ describe("ThemeProvider", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Current theme")).toHaveTextContent("dark");
-      expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+      expect(screen.getByLabelText("Current theme")).toHaveTextContent("light");
+      expect(document.documentElement).toHaveAttribute("data-theme", "light");
     });
   });
 });

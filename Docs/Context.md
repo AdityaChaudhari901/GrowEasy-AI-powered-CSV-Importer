@@ -467,6 +467,9 @@ Do not expose API keys to the browser. Do not commit `.env` files.
 - Fixed Render Docker build packaging:
   - `Dockerfile.backend` and `Dockerfile.frontend` now copy `Docs/tsconfig.base.json` before building `Backend/shared`.
   - This keeps the image build aligned with local TypeScript config inheritance and prevents Render from failing during declaration generation with missing `/app/Docs/tsconfig.base.json`.
+- Updated theme initialization:
+  - First-time visitors now default to light mode even if their system preference is dark.
+  - Saved `groweasy-theme` values still take precedence, so users who manually switch to dark keep dark mode on future visits.
 
 ## Context Maintenance Rule
 
