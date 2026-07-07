@@ -12,7 +12,7 @@ The assignment evaluates AI extraction accuracy, backend quality, frontend polis
 
 1. Upload a CSV through drag and drop or file picker.
 2. Parse and preview the CSV in the browser.
-3. Show a scrollable table with sticky headers before any AI call.
+3. Show a bounded, scrollable CSV preview with pagination before any AI call.
 4. Wait for user confirmation.
 5. Send the CSV to the backend only after confirmation.
 6. Process records through an AI model in batches.
@@ -63,7 +63,7 @@ Skip any record with neither email nor mobile number.
 - Frontend supports CSV upload from Lead Sources only.
 - Browser preview parses the selected CSV before any backend or AI call.
 - Browser preview detects comma, semicolon, and tab delimiters, strips BOM headers, and blocks duplicate or empty headers.
-- The preview table supports scrollable overflow and sticky headers.
+- The preview modal uses a scrollable paginated table that prioritizes the GrowEasy lead-review fields and shows page controls.
 - Confirming `Import & Process with AI` sends the original CSV to the backend after explicit user consent.
 - Successful import redirects to `#manage-leads` and renders normalized CRM records.
 - The import modal shows a four-step Upload / Preview / Confirm / Process stepper and keeps the confirmation footer visible.
@@ -90,8 +90,8 @@ The user provided three GrowEasy reference screenshots in chat.
 
 - Same modal shell and overlay.
 - Selected file appears in a compact file card with CSV icon, file name, size, and remove icon.
-- Preview table appears inside the modal.
-- Table uses uppercase headers, horizontal scrolling, row separators, and compact row height.
+- A compact table preview appears inside the modal.
+- Preview rows prioritize GrowEasy lead fields and paginate in 50-row pages.
 - Footer keeps `Cancel` and primary `Upload File`.
 
 ### Manage Leads Table
@@ -144,7 +144,8 @@ UI components to build:
 - App shell with sidebar matching reference structure.
 - Import modal with upload state and preview state.
 - CSV drop zone with file picker fallback.
-- Responsive data table with sticky headers.
+- Scrollable paginated CSV preview for the import modal.
+- Responsive data tables with sticky headers for Manage Leads results.
 - Import progress section for AI batch processing.
 - Results summary cards for total/imported/skipped/errored totals.
 - Parsed records table.
@@ -405,11 +406,33 @@ Do not expose API keys to the browser. Do not commit `.env` files.
   - Updated upload, modal, and empty-state copy to read as GrowEasy CRM intake rather than generic CSV tooling.
   - Moved exported screen reference HTML files into `Docs/references/` so the project root contains only `Backend`, `Docs`, and `Frontend`.
 - Re-applied `Docs/references/groweasy_lead_sources_screen.html` and `Docs/references/groweasy_manage_leads_screen.html` as the two-screen UI reference without copying mock data:
-  - Lead Sources now uses the reference-style header metrics, compact four-step tracker, vertical column-mapping rows, and a single browse-files upload panel.
+  - Lead Sources keeps the reference-style CRM console surface but is now a clean upload-only destination with one `Upload CSV` action.
   - Manage Leads now always shows reference-style Total/Imported/Skipped/Errored cards and filter tabs, with values derived from `result.summary`.
   - The Manage Leads source line uses the actual uploaded CSV filename, import timestamp, preview row count, and preview column count from frontend state.
   - Static mock counts, fake filenames, and fake lead rows from the HTML references are not used.
   - Table and badge primitives were tightened to match the compact CRM-console reference density.
+  - Lead Sources and Manage Leads now render as separate sidebar/hash destinations instead of stacked sections on one page.
+  - Successful confirmed CSV import switches the active destination to `#manage-leads`.
+  - Removed the duplicate page-level `Upload / Preview / Confirm / Extract` tracker from Lead Sources; the modal is now the only place that shows import progress.
+  - Simplified Lead Sources to a single `Upload CSV` action with short process notes for local preview, explicit confirmation, and Manage Leads output.
+- Expanded Lead Sources so it no longer feels empty:
+  - Reworked the first viewport into an organized stacked intake surface with one focused full-width import band.
+  - Removed page-level demo metrics and demo CSV download actions so the screen stays upload-first.
+  - Removed the extra `Header intelligence` / `GrowEasy CRM output` mapping panel so Lead Sources stays focused on upload.
+- Removed the Lead Sources `Flexible import coverage` / `Works with messy lead exports` source-list panel after user feedback; backend support and regression tests for messy export formats remain in place.
+- Replaced the modal CSV preview with a bounded paginated table:
+  - Shows file stats and a 50-row-per-page preview of the configured lead-review columns.
+  - Keeps overflow contained inside the preview table so the modal footer remains usable.
+  - Keeps the "No data has been sent anywhere yet" safety state before confirmation.
+- Kept `Download Sample CSV Template` as a header-only GrowEasy CSV template and removed demo CSV download actions from Lead Sources and the upload modal.
+- Strengthened deterministic fallback mapping for common export headers such as `created_time`, `customer phone`, `campaign_name`, `deal stage`, `assigned agent`, `property type`, `UTM Source`, `First Name`, and `Last Name`.
+- Added backend regression coverage proving Facebook Lead Export, Google Ads Export, Excel sheets, Real Estate CRM exports, Sales reports, Marketing agency CSVs, and manually created spreadsheets normalize into GrowEasy CRM fields.
+- Replaced the fixed desktop icon rail with an Aceternity-style collapsible sidebar primitive:
+  - Added `Frontend/src/components/ui/sidebar.tsx` with `Sidebar`, `SidebarBody`, and `SidebarLink` exports.
+  - Kept only GrowEasy product navigation: `Lead Sources` and `Manage Leads`.
+  - Reused the existing GrowEasy logo asset and avoided the demo Dashboard/Profile/Settings/Logout links from the reference snippet.
+  - Removed the bottom `GE / GrowEasy CRM` profile-style link and smoothed hover expansion with an explicit width transition plus animated logo/link labels.
+  - Made the desktop sidebar `sticky top-0` and removed internal nav scrolling so it stays fixed while main content scrolls.
 
 ## Context Maintenance Rule
 

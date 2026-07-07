@@ -170,22 +170,16 @@ export const normalizeLeadRecord = (
 ):
   | { ok: true; record: CrmLeadRecord }
   | { ok: false; reason: string } => {
-  const emailSearchText = [
-    input.email,
-    input.crm_note,
-    input.description
-  ]
-    .map(compactText)
-    .join(" ");
-  const phoneSearchText = [
-    input.mobile_without_country_code,
-    input.crm_note,
-    input.description
-  ]
-    .map(compactText)
-    .join(" ");
-  const emails = unique(extractEmails(emailSearchText));
-  const phoneCandidates = unique(extractPhoneCandidates(phoneSearchText));
+  const emails = unique(
+    [input.email, input.crm_note, input.description]
+      .map(compactText)
+      .flatMap(extractEmails)
+  );
+  const phoneCandidates = unique(
+    [input.mobile_without_country_code, input.crm_note, input.description]
+      .map(compactText)
+      .flatMap(extractPhoneCandidates)
+  );
 
   const countryCode =
     normalizeCountryCode(input.country_code) ||

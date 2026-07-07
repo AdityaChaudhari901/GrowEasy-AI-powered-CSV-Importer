@@ -7,7 +7,7 @@ type AppShellProps = {
 export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="flex min-h-screen w-full overflow-hidden bg-[var(--background)]">
+      <div className="flex min-h-screen w-full overflow-x-clip bg-[var(--background)]">
         <Sidebar />
         <div className="min-w-0 flex-1">
           <MobileNavigation />

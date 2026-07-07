@@ -87,6 +87,29 @@ LLM_PROVIDER=local-fallback
 7. Records are normalized and validated with Zod.
 8. The UI displays imported records, skipped rows, errored rows, totals, and batch diagnostics.
 
+## Sample CSV Template
+
+The upload modal includes a `Download Sample CSV Template` action. It downloads
+a header-only GrowEasy CRM template so users can prepare their own lead CSV
+without triggering any backend or AI processing.
+
+## Supported CSV Shapes
+
+The importer is designed to handle flexible lead exports, including:
+
+- Facebook Lead Export
+- Google Ads Export
+- Excel sheets
+- Real estate CRM exports
+- Sales reports
+- Marketing agency CSVs
+- Manually created spreadsheets
+
+Vertex handles unfamiliar headers after confirmation, and the local fallback
+recognizes common export headers such as `created_time`, `customer phone`,
+`campaign_name`, `deal stage`, `assigned agent`, `property type`, `UTM Source`,
+`First Name`, and `Last Name`.
+
 ## AI Mapping Contract
 
 - The model receives the detected headers and a batch of raw row objects.

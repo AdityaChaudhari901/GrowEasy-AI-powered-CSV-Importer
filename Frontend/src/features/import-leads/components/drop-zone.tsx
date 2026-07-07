@@ -47,14 +47,6 @@ export function DropZone({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => inputRef.current?.click()}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          inputRef.current?.click();
-        }
-      }}
       onDragOver={(event) => {
         event.preventDefault();
         const items = Array.from(event.dataTransfer.items);
@@ -69,7 +61,7 @@ export function DropZone({
       onDragLeave={() => setDragState("idle")}
       onDrop={handleDrop}
       className={cn(
-        "flex min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--border-strong)] bg-[var(--surface-wash)] px-6 py-8 text-center transition-colors",
+        "flex min-h-[260px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--border-strong)] bg-[var(--surface-wash)] px-6 py-8 text-center transition-colors",
         dragState === "valid" && "border-[var(--teal)] bg-[var(--teal-faint)]",
         dragState === "invalid" && "border-[var(--danger)] bg-[var(--danger-soft)]"
       )}
@@ -87,50 +79,64 @@ export function DropZone({
         }}
       />
 
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--panel)] text-[var(--teal)] shadow-sm">
-        {file ? (
-          <FileSpreadsheet className="h-7 w-7" aria-hidden="true" />
-        ) : (
-          <Upload className="h-7 w-7" aria-hidden="true" />
-        )}
-      </div>
-
-      <p className="text-lg font-extrabold text-[var(--foreground)]">
-        {dragState === "idle"
-          ? file
-            ? file.name
-            : "Drop your CSV file here"
-          : dragMessage}
-      </p>
-      <p className="mt-2 text-sm font-semibold text-[var(--muted)]">
-        {file ? formatBytes(file.size) : "or click to browse files"}
-      </p>
-
-      <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 font-[var(--font-mono)] text-xs font-semibold text-[var(--muted-strong)] shadow-sm">
-        .csv up to 10MB
-      </div>
-
-      <p className="mt-4 max-w-[560px] text-sm font-semibold leading-6 text-[var(--muted)]">
-        Required headers are flexible. GrowEasy maps lead exports into CRM,
-        WhatsApp, and calling-ready fields after confirmation.
-      </p>
-
-      {error ? (
-        <p className="mt-4 text-sm font-bold text-[var(--danger)]">{error}</p>
-      ) : null}
-
-      <Button
-        className="mt-5"
-        variant="outline"
-        onClick={(event) => {
-          event.stopPropagation();
-          onDownloadTemplate();
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Choose CSV file"
+        className="flex w-full cursor-pointer flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            inputRef.current?.click();
+          }
         }}
-        disabled={isParsing}
       >
-        <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
-        Download Sample CSV Template
-      </Button>
+        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--panel)] text-[var(--teal)] shadow-sm">
+          {file ? (
+            <FileSpreadsheet className="h-7 w-7" aria-hidden="true" />
+          ) : (
+            <Upload className="h-7 w-7" aria-hidden="true" />
+          )}
+        </div>
+
+        <p className="text-lg font-extrabold text-[var(--foreground)]">
+          {dragState === "idle"
+            ? file
+              ? file.name
+              : "Drop your CSV file here"
+            : dragMessage}
+        </p>
+        <p className="mt-2 text-sm font-semibold text-[var(--muted)]">
+          {file ? formatBytes(file.size) : "or click to browse files"}
+        </p>
+
+        <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 font-[var(--font-mono)] text-xs font-semibold text-[var(--muted-strong)] shadow-sm">
+          .csv up to 10MB
+        </div>
+
+        <p className="mt-4 max-w-[560px] text-sm font-semibold leading-6 text-[var(--muted)]">
+          Required headers are flexible. GrowEasy maps lead exports into CRM,
+          WhatsApp, and calling-ready fields after confirmation.
+        </p>
+
+        {error ? (
+          <p className="mt-4 text-sm font-bold text-[var(--danger)]">{error}</p>
+        ) : null}
+      </div>
+
+      <div className="mt-5 grid w-full max-w-[360px] gap-2">
+        <Button
+          variant="outline"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDownloadTemplate();
+          }}
+          disabled={isParsing}
+        >
+          <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+          Download Sample CSV Template
+        </Button>
+      </div>
     </div>
   );
 }

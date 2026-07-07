@@ -1,50 +1,58 @@
 "use client";
 
-import {
-  Database,
-  Megaphone,
-  type LucideIcon
-} from "lucide-react";
+import { Database, Megaphone } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import growEasyLogo from "@/assets/groweasy-logo.webp";
+import {
+  Sidebar as AceternitySidebar,
+  SidebarBody,
+  SidebarLink
+} from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Lead Sources", icon: Megaphone, target: "lead-sources" },
-  { label: "Manage Leads", icon: Database, target: "manage-leads" }
-];
+  {
+    label: "Lead Sources",
+    href: "#lead-sources",
+    target: "lead-sources",
+    icon: <Megaphone className="h-5 w-5 shrink-0" aria-hidden="true" />
+  },
+  {
+    label: "Manage Leads",
+    href: "#manage-leads",
+    target: "manage-leads",
+    icon: <Database className="h-5 w-5 shrink-0" aria-hidden="true" />
+  }
+] as const;
 
 export function Sidebar() {
+  const [open, setOpen] = useState(false);
   const activeTarget = useActiveTarget();
 
   return (
-    <aside className="hidden min-h-full w-[68px] shrink-0 bg-[var(--rail)] px-3 py-5 lg:flex lg:flex-col lg:items-center">
-      <a
-        href="#lead-sources"
-        aria-label="GrowEasy home"
-        className="mb-7 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--teal-soft)] shadow-sm transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--rail)]"
-      >
-        <Image
-          src={growEasyLogo}
-          alt=""
-          width={40}
-          height={40}
-          className="h-10 w-10 rounded-lg object-cover"
-          priority
-        />
-      </a>
+    <AceternitySidebar open={open} setOpen={setOpen}>
+      <SidebarBody className="gap-8">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <Logo open={open} />
 
-      <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Primary">
-        {navItems.map((item) => (
-          <SidebarItem
-            key={item.target}
-            {...item}
-            active={activeTarget === item.target}
-          />
-        ))}
-      </nav>
-    </aside>
+          <nav className="mt-8 flex flex-col gap-2" aria-label="Primary">
+            {navItems.map(({ target, ...link }) => (
+              <SidebarLink
+                key={target}
+                link={link}
+                aria-current={activeTarget === target ? "page" : undefined}
+                className={cn(
+                  activeTarget === target
+                    ? "bg-[var(--teal)] text-white shadow-sm"
+                    : "text-[var(--muted-strong)] hover:bg-[var(--teal-faint)] hover:text-[var(--teal-strong)]"
+                )}
+              />
+            ))}
+          </nav>
+        </div>
+      </SidebarBody>
+    </AceternitySidebar>
   );
 }
 
@@ -54,26 +62,22 @@ export function MobileNavigation() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--panel)]/96 px-4 py-3 backdrop-blur lg:hidden">
       <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--foreground)]">
-          <Image
-            src={growEasyLogo}
-            alt=""
-            width={36}
-            height={36}
-            className="h-9 w-9 rounded-xl object-cover"
-            priority
-          />
-        </div>
+        <LogoIcon />
         <span className="font-[var(--font-heading)] text-2xl font-bold tracking-normal text-[var(--foreground)]">
           GrowEasy
         </span>
       </div>
 
-      <nav className="flex gap-2 overflow-x-auto no-visible-scrollbar" aria-label="Primary">
+      <nav
+        className="flex gap-2 overflow-x-auto no-visible-scrollbar"
+        aria-label="Primary"
+      >
         {navItems.map((item) => (
           <MobileNavItem
             key={item.target}
-            {...item}
+            href={item.href}
+            label={item.label}
+            icon={item.icon}
             active={activeTarget === item.target}
           />
         ))}
@@ -82,42 +86,68 @@ export function MobileNavigation() {
   );
 }
 
-type NavItem = {
-  label: string;
-  icon: LucideIcon;
-  target: string;
-};
-
-type NavItemProps = NavItem & {
-  active: boolean;
-};
-
-function SidebarItem({ label, icon: Icon, target, active }: NavItemProps) {
+export function Logo({ open = true }: { open?: boolean }) {
   return (
     <a
-      href={`#${target}`}
-      aria-label={label}
-      aria-current={active ? "page" : undefined}
-      title={label}
-      className={cn(
-        "group relative flex h-11 w-11 items-center justify-center rounded-lg text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2",
-        active
-          ? "bg-white/10 text-white shadow-sm"
-          : "text-[var(--rail-ink)] hover:bg-white/10 hover:text-white"
-      )}
+      href="#lead-sources"
+      aria-label="GrowEasy home"
+      className="relative z-20 flex items-center gap-3 rounded-xl py-1 text-sm font-normal text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2"
     >
-      <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-      <span className="pointer-events-none absolute left-[3.25rem] z-20 hidden whitespace-nowrap rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 text-xs font-bold text-[var(--foreground)] shadow-[var(--shadow-soft)] group-hover:block">
-        {label}
+      <Image
+        src={growEasyLogo}
+        alt=""
+        width={40}
+        height={40}
+        className="h-10 w-10 shrink-0 rounded-xl object-cover shadow-sm"
+        priority
+      />
+      <span
+        className={cn(
+          "min-w-0 whitespace-pre font-[var(--font-heading)] text-xl font-bold text-[var(--foreground)] transition-[max-width,opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          open
+            ? "max-w-40 translate-x-0 opacity-100"
+            : "max-w-0 -translate-x-1 overflow-hidden opacity-0"
+        )}
+      >
+        GrowEasy
       </span>
     </a>
   );
 }
 
-function MobileNavItem({ label, icon: Icon, target, active }: NavItemProps) {
+export function LogoIcon() {
   return (
     <a
-      href={`#${target}`}
+      href="#lead-sources"
+      aria-label="GrowEasy home"
+      className="relative z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2"
+    >
+      <Image
+        src={growEasyLogo}
+        alt=""
+        width={40}
+        height={40}
+        className="h-10 w-10 rounded-xl object-cover shadow-sm"
+        priority
+      />
+    </a>
+  );
+}
+
+function MobileNavItem({
+  label,
+  href,
+  icon,
+  active
+}: {
+  label: string;
+  href: string;
+  icon: ReactNode;
+  active: boolean;
+}) {
+  return (
+    <a
+      href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex h-10 shrink-0 items-center gap-2 rounded-lg border px-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2",
@@ -126,14 +156,16 @@ function MobileNavItem({ label, icon: Icon, target, active }: NavItemProps) {
           : "border-[var(--border-soft)] bg-[var(--panel)] text-[var(--muted-strong)]"
       )}
     >
-      <Icon className="h-4 w-4" aria-hidden="true" />
+      {icon}
       {label}
     </a>
   );
 }
 
 function useActiveTarget() {
-  const [activeTarget, setActiveTarget] = useState(navItems[0]?.target ?? "");
+  const [activeTarget, setActiveTarget] = useState<string>(
+    navItems[0]?.target ?? ""
+  );
 
   useEffect(() => {
     const updateFromHash = () => {
