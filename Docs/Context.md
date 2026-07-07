@@ -82,7 +82,7 @@ The user provided three GrowEasy reference screenshots in chat.
 - Large centered Aceternity file-upload surface with drag/drop and click upload.
 - Animated upload tile appears inside the upload surface.
 - Helper text mentions `.csv` support and max file size.
-- Sample CSV template button appears inside the drop zone.
+- Company sample CSV button appears inside the drop zone.
 - Footer has two large actions: `Cancel` and `Upload File`.
 - Upload action is disabled or pale before file selection, then bright orange after selection.
 
@@ -128,7 +128,7 @@ Domain concepts:
 Color world:
 
 - Canvas white: page and modal background.
-- Soft teal: selected nav, upload icon background, template button.
+- Soft teal: selected nav, upload icon background, sample CSV button.
 - Deep teal: primary controls, focus state, success accents.
 - Warm orange: final import/upload action.
 - Cool gray: overlay, borders, secondary text.
@@ -243,7 +243,7 @@ Do not expose API keys to the browser. Do not commit `.env` files.
 - Rows omitted by the extractor are treated as errored, not skipped, because omission means the pipeline contract failed.
 - Dates must be convertible by JavaScript `new Date(created_at)`.
 - Multiple emails or phone numbers should keep the first value in the canonical field and append the rest to `crm_note`.
-- CSV output or downloadable templates must avoid unintended line breaks and account for CSV formula injection risks.
+- CSV output or downloadable samples must avoid unintended line breaks and account for CSV formula injection risks.
 
 ## Security Notes
 
@@ -439,11 +439,12 @@ Do not expose API keys to the browser. Do not commit `.env` files.
   - Scrollable CSV preview, result tables, modal body, and result tabs hide native scrollbar chrome while preserving vertical and horizontal scrolling.
   - Keeps overflow contained inside the preview table so the modal footer remains usable.
   - Keeps the "No data has been sent anywhere yet" safety state before confirmation.
-- Kept `Download Sample CSV Template` as a header-only GrowEasy CSV template and restored a modal-only `Download 100 Rows CSV` action backed by generated demo rows.
+- Replaced the header-only `Download Sample CSV Template` action with `Download Sample CSV`, backed by the company-provided `groweasy_sample_leads.csv` data rows.
+- Kept the modal-only `Download 100 Rows CSV` action backed by generated demo rows.
 - Replaced the custom upload drop zone with Aceternity `FileUpload`, keeping the same CSV-only validation and local preview flow.
 - Restyled the Aceternity uploader for the white GrowEasy modal: removed the dark demo grid/tile, reduced the upload surface height, and kept a subtle teal dashed target.
 - Removed the Aceternity hover/lift animation from the uploader so the white modal stays calm and static.
-- Simplified the upload modal empty state into one compact dashed upload surface, a thin helper strip, and non-wrapping CSV/template download actions.
+- Simplified the upload modal empty state into one compact dashed upload surface, a thin helper strip, and non-wrapping CSV download actions.
 - Strengthened deterministic fallback mapping for common export headers such as `created_time`, `customer phone`, `campaign_name`, `deal stage`, `assigned agent`, `property type`, `UTM Source`, `First Name`, and `Last Name`.
 - Added backend regression coverage proving Facebook Lead Export, Google Ads Export, Excel sheets, Real Estate CRM exports, Sales reports, Marketing agency CSVs, and manually created spreadsheets normalize into GrowEasy CRM fields.
 - Replaced the fixed desktop icon rail with an Aceternity-style collapsible sidebar primitive:

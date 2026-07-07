@@ -105,11 +105,11 @@ LLM_PROVIDER=local-fallback
 7. Records are normalized and validated with Zod.
 8. The UI displays imported records, skipped rows, errored rows, totals, and batch diagnostics.
 
-## Sample CSV Template
+## Sample CSV
 
-The upload modal includes a `Download Sample CSV Template` action. It downloads
-a header-only GrowEasy CRM template so users can prepare their own lead CSV
-without triggering any backend or AI processing.
+The upload modal includes a `Download Sample CSV` action. It downloads the
+company-provided `groweasy_sample_leads.csv` with real example rows, so the file
+can be uploaded immediately for preview and extraction testing.
 
 ## Supported CSV Shapes
 

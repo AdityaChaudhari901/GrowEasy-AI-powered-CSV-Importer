@@ -12,7 +12,7 @@ type DropZoneProps = {
   error: string;
   onFileSelected: (file: File) => void;
   onReject: (message: string) => void;
-  onDownloadTemplate: () => void;
+  onDownloadCompanySample: () => void;
   onDownloadDemoCsv: () => void;
 };
 
@@ -30,7 +30,7 @@ export function DropZone({
   error,
   onFileSelected,
   onReject,
-  onDownloadTemplate,
+  onDownloadCompanySample,
   onDownloadDemoCsv
 }: DropZoneProps) {
   const handleUploadedFiles = (uploadedFiles: File[]) => {
@@ -104,15 +104,15 @@ export function DropZone({
         <Button
           variant="outline"
           className="h-11 whitespace-nowrap text-sm"
-          aria-label="Download Sample CSV Template"
+          aria-label="Download company sample leads CSV"
           onClick={(event) => {
             event.stopPropagation();
-            onDownloadTemplate();
+            onDownloadCompanySample();
           }}
           disabled={isParsing}
         >
           <Download className="h-4 w-4" aria-hidden="true" />
-          Download Template
+          Download Sample CSV
         </Button>
       </div>
     </div>

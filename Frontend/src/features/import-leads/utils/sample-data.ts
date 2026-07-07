@@ -86,6 +86,11 @@ const cycleItem = <T>(items: readonly T[], index: number): T => {
   return item;
 };
 
+const buildCsv = (rows: string[][]) =>
+  `${sampleCsvHeaders.join(",")}\n${rows
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n")}\n`;
+
 const buildDemoCsv = (rowCount: number) => {
   const rows = Array.from({ length: rowCount }, (_, index) => {
     const rowNumber = index + 1;
@@ -113,16 +118,51 @@ const buildDemoCsv = (rowCount: number) => {
       source.toLowerCase().replaceAll(" ", "_"),
       index % 3 === 0 ? "Within 6 months" : "",
       `${source} row ${rowNumber}`
-    ].map(csvEscape);
+    ];
   });
 
-  return `${sampleCsvHeaders.join(",")}\n${rows
-    .map((row) => row.join(","))
-    .join("\n")}\n`;
+  return buildCsv(rows);
 };
 
-export const templateCsvFilename = "groweasy_sample_template.csv";
-export const templateCsv = `${sampleCsvHeaders.join(",")}\n`;
+const companySampleRows = [
+  [
+    "2026-05-13 14:20:48",
+    "John Doe",
+    "john.doe@example.com",
+    "+91",
+    "9876543210",
+    "GrowEasy",
+    "Mumbai",
+    "Maharashtra",
+    "India",
+    "test@groweasy.ai",
+    "GOOD_LEAD_FOLLOW_UP",
+    "Client is asking to reschedule demo",
+    "leads_on_demand",
+    "",
+    "Demo requested"
+  ],
+  [
+    "2026-05-13 14:25:30",
+    "Sarah Johnson",
+    "sarah.johnson@example.com",
+    "+91",
+    "9876543211",
+    "Tech Solutions",
+    "Bangalore",
+    "Karnataka",
+    "India",
+    "test@groweasy.ai",
+    "DID_NOT_CONNECT",
+    "Person was busy will try again next week",
+    "",
+    "",
+    ""
+  ]
+];
+
+export const companySampleCsvFilename = "groweasy_sample_leads.csv";
+export const companySampleCsv = buildCsv(companySampleRows);
 export const demoCsvRowCount = 100;
 export const demoCsvFilename = `groweasy_demo_${demoCsvRowCount}_rows.csv`;
 export const demoCsv = buildDemoCsv(demoCsvRowCount);

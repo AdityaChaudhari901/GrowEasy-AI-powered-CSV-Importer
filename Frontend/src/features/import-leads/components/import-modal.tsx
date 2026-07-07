@@ -9,10 +9,10 @@ import { useCsvImport } from "../hooks/use-csv-import";
 import type { CsvPreview, ImportSuccessPayload } from "../types";
 import { parseCsvPreview } from "../utils/preview-parser";
 import {
+  companySampleCsv,
+  companySampleCsvFilename,
   demoCsv,
-  demoCsvFilename,
-  templateCsv,
-  templateCsvFilename
+  demoCsvFilename
 } from "../utils/sample-data";
 import { CsvPreviewTable } from "./csv-preview-table";
 import { DropZone } from "./drop-zone";
@@ -119,10 +119,10 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
     }
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadCompanySample = () => {
     downloadCsvFile({
-      filename: templateCsvFilename,
-      contents: templateCsv
+      filename: companySampleCsvFilename,
+      contents: companySampleCsv
     });
   };
 
@@ -310,7 +310,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
                   tone: "danger"
                 });
               }}
-              onDownloadTemplate={handleDownloadTemplate}
+              onDownloadCompanySample={handleDownloadCompanySample}
               onDownloadDemoCsv={handleDownloadDemoCsv}
             />
           ) : null}
