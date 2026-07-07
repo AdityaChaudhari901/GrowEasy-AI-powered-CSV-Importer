@@ -3,6 +3,33 @@ import { describe, expect, it, vi } from "vitest";
 import { DropZone } from "./drop-zone";
 
 describe("DropZone", () => {
+  it("passes a selected CSV file through the Aceternity upload component", () => {
+    const handleFileSelected = vi.fn();
+    const handleReject = vi.fn();
+
+    render(
+      <DropZone
+        file={null}
+        isParsing={false}
+        error=""
+        onFileSelected={handleFileSelected}
+        onReject={handleReject}
+        onDownloadTemplate={() => undefined}
+      />
+    );
+
+    const csvFile = new File(["created_at,name\n"], "leads.csv", {
+      type: "text/csv"
+    });
+
+    fireEvent.change(screen.getByLabelText("Choose CSV file"), {
+      target: { files: [csvFile] }
+    });
+
+    expect(handleFileSelected).toHaveBeenCalledWith(csvFile);
+    expect(handleReject).not.toHaveBeenCalled();
+  });
+
   it("renders the template download button without demo CSV download", () => {
     const handleFileSelected = vi.fn();
     const handleReject = vi.fn();

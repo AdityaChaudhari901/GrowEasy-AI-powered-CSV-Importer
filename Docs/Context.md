@@ -79,8 +79,8 @@ The user provided three GrowEasy reference screenshots in chat.
 
 - Page context: GrowEasy dashboard with left sidebar and dimmed overlay.
 - Modal title: `Import Leads via CSV`.
-- Large centered drop zone with dashed border.
-- Upload icon centered in a soft teal container.
+- Large centered Aceternity file-upload surface with drag/drop and click upload.
+- Animated upload tile appears inside the upload surface.
 - Helper text mentions `.csv` support and max file size.
 - Sample CSV template button appears inside the drop zone.
 - Footer has two large actions: `Cancel` and `Upload File`.
@@ -425,6 +425,7 @@ Do not expose API keys to the browser. Do not commit `.env` files.
   - Keeps overflow contained inside the preview table so the modal footer remains usable.
   - Keeps the "No data has been sent anywhere yet" safety state before confirmation.
 - Kept `Download Sample CSV Template` as a header-only GrowEasy CSV template and removed demo CSV download actions from Lead Sources and the upload modal.
+- Replaced the custom upload drop zone with Aceternity `FileUpload`, keeping the same CSV-only validation and local preview flow.
 - Strengthened deterministic fallback mapping for common export headers such as `created_time`, `customer phone`, `campaign_name`, `deal stage`, `assigned agent`, `property type`, `UTM Source`, `First Name`, and `Last Name`.
 - Added backend regression coverage proving Facebook Lead Export, Google Ads Export, Excel sheets, Real Estate CRM exports, Sales reports, Marketing agency CSVs, and manually created spreadsheets normalize into GrowEasy CRM fields.
 - Replaced the fixed desktop icon rail with an Aceternity-style collapsible sidebar primitive:

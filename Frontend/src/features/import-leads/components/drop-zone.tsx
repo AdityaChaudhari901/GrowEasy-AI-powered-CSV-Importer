@@ -1,9 +1,10 @@
 "use client";
 
-import { FileSpreadsheet, Upload } from "lucide-react";
-import { useRef, useState, type DragEvent } from "react";
+import { FileSpreadsheet } from "lucide-react";
+import { type Accept, type FileRejection } from "react-dropzone";
 import { Button } from "@/components/ui/button";
-import { cn, formatBytes } from "@/lib/utils";
+import { FileUpload } from "@/components/ui/file-upload";
+import { cn } from "@/lib/utils";
 
 type DropZoneProps = {
   file: File | null;
@@ -14,6 +15,14 @@ type DropZoneProps = {
   onDownloadTemplate: () => void;
 };
 
+const csvAccept = {
+  "text/csv": [".csv"],
+  "application/csv": [".csv"],
+  "application/vnd.ms-excel": [".csv"]
+} satisfies Accept;
+
+const csvInputAccept = ".csv,text/csv,application/csv,application/vnd.ms-excel";
+
 export function DropZone({
   file,
   isParsing,
@@ -22,109 +31,62 @@ export function DropZone({
   onReject,
   onDownloadTemplate
 }: DropZoneProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragState, setDragState] = useState<"idle" | "valid" | "invalid">(
-    "idle"
-  );
-
-  const dragMessage =
-    dragState === "invalid" ? "Drop a single CSV file" : "Release to preview CSV";
-
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setDragState("idle");
-
-    if (event.dataTransfer.files.length !== 1) {
+  const handleUploadedFiles = (uploadedFiles: File[]) => {
+    if (uploadedFiles.length !== 1) {
       onReject("Drop one CSV file at a time.");
       return;
     }
 
-    const droppedFile = event.dataTransfer.files.item(0);
-    if (droppedFile) {
-      onFileSelected(droppedFile);
+    const selectedFile = uploadedFiles[0];
+    if (selectedFile) {
+      onFileSelected(selectedFile);
     }
+  };
+
+  const handleRejectedFiles = (rejections: FileRejection[]) => {
+    const hasInvalidType = rejections.some((rejection) =>
+      rejection.errors.some((error) => error.code === "file-invalid-type")
+    );
+
+    onReject(
+      hasInvalidType
+        ? "Upload a CSV file exported as text/csv."
+        : "Drop one CSV file at a time."
+    );
   };
 
   return (
     <div
-      onDragOver={(event) => {
-        event.preventDefault();
-        const items = Array.from(event.dataTransfer.items);
-        const hasMultipleFiles = items.length > 1;
-        const fileItem = items.find((item) => item.kind === "file");
-        const isClearlyInvalid =
-          Boolean(fileItem?.type) &&
-          !["text/csv", "application/vnd.ms-excel"].includes(fileItem?.type ?? "");
-
-        setDragState(hasMultipleFiles || isClearlyInvalid ? "invalid" : "valid");
-      }}
-      onDragLeave={() => setDragState("idle")}
-      onDrop={handleDrop}
       className={cn(
-        "flex min-h-[260px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--border-strong)] bg-[var(--surface-wash)] px-6 py-8 text-center transition-colors",
-        dragState === "valid" && "border-[var(--teal)] bg-[var(--teal-faint)]",
-        dragState === "invalid" && "border-[var(--danger)] bg-[var(--danger-soft)]"
+        "rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-wash)] p-3 text-center transition-colors",
+        error && "border-[var(--danger)] bg-[var(--danger-soft)]"
       )}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".csv,text/csv"
-        className="sr-only"
-        onChange={(event) => {
-          const selectedFile = event.target.files?.item(0);
-          if (selectedFile) {
-            onFileSelected(selectedFile);
-          }
-        }}
+      <FileUpload
+        accept={csvAccept}
+        className="rounded-lg bg-[var(--panel)]"
+        disabled={isParsing}
+        files={file ? [file] : []}
+        inputAccept={csvInputAccept}
+        inputAriaLabel="Choose CSV file"
+        maxFiles={1}
+        onChange={handleUploadedFiles}
+        onDropRejected={handleRejectedFiles}
+        title="Upload file"
+        description="Drag or drop your CSV file here or click to upload"
       />
 
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label="Choose CSV file"
-        className="flex w-full cursor-pointer flex-col items-center text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:ring-offset-2"
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            inputRef.current?.click();
-          }
-        }}
-      >
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--border-strong)] bg-[var(--panel)] text-[var(--teal)] shadow-sm">
-          {file ? (
-            <FileSpreadsheet className="h-7 w-7" aria-hidden="true" />
-          ) : (
-            <Upload className="h-7 w-7" aria-hidden="true" />
-          )}
-        </div>
-
-        <p className="text-lg font-extrabold text-[var(--foreground)]">
-          {dragState === "idle"
-            ? file
-              ? file.name
-              : "Drop your CSV file here"
-            : dragMessage}
-        </p>
-        <p className="mt-2 text-sm font-semibold text-[var(--muted)]">
-          {file ? formatBytes(file.size) : "or click to browse files"}
-        </p>
-
-        <div className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 font-[var(--font-mono)] text-xs font-semibold text-[var(--muted-strong)] shadow-sm">
-          .csv up to 10MB
-        </div>
-
-        <p className="mt-4 max-w-[560px] text-sm font-semibold leading-6 text-[var(--muted)]">
-          Required headers are flexible. GrowEasy maps lead exports into CRM,
-          WhatsApp, and calling-ready fields after confirmation.
-        </p>
-
-        {error ? (
-          <p className="mt-4 text-sm font-bold text-[var(--danger)]">{error}</p>
-        ) : null}
+      <p className="mx-auto mt-4 max-w-[560px] text-sm font-semibold leading-6 text-[var(--muted)]">
+        Required headers are flexible. GrowEasy maps lead exports into CRM,
+        WhatsApp, and calling-ready fields after confirmation.
+      </p>
+      <div className="mx-auto mt-3 w-fit rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 font-[var(--font-mono)] text-xs font-semibold text-[var(--muted-strong)] shadow-sm">
+        .csv up to 10MB
       </div>
-
-      <div className="mt-5 grid w-full max-w-[360px] gap-2">
+      {error ? (
+        <p className="mt-4 text-sm font-bold text-[var(--danger)]">{error}</p>
+      ) : null}
+      <div className="mx-auto mt-5 grid w-full max-w-[360px] gap-2">
         <Button
           variant="outline"
           onClick={(event) => {
