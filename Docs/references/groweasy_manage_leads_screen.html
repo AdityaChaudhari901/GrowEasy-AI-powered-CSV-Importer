@@ -1,0 +1,95 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+.gs{--surface:#FBFBF8;--card:#FFFFFF;--border:#E8E5DC;--ink:#181D1A;--ink2:#767A70;--accent:#0F5C48;--accent-bg:#E2F0E8;--rail:#12241D;--rail-ink:#9FB3A8;--warn:#9A5B12;--warn-bg:#FBF0E1;--danger:#A23B2E;--danger-bg:#FBEAE6;font-family:'Inter',sans-serif;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;}
+.gs h1,.gs h2{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.015em;margin:0;}
+.gs-mono{font-family:'IBM Plex Mono',monospace;}
+.gs-card{background:var(--card);border:1px solid var(--border);border-radius:16px;}
+.gs-nav{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--rail-ink);}
+.gs-nav.active{background:rgba(255,255,255,0.1);color:#fff;}
+.gs-tab{font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;color:var(--ink2);}
+.gs-tab.active{background:var(--ink);color:#fff;}
+.gs-cell{padding:11px 12px;font-size:12.5px;border-bottom:1px solid var(--border);}
+</style>
+<div class="gs">
+<h2 style="position:absolute;width:1px;height:1px;overflow:hidden;">Manage leads screen: summary stat cards for total, imported, skipped, and errored counts, filter tabs, and a table of extracted CRM records with status-coded rows.</h2>
+<div style="display:flex;min-height:560px;">
+  <div style="width:56px;background:var(--rail);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:14px;">
+    <div style="width:26px;height:26px;border-radius:7px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;">G</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+      <div class="gs-nav" title="Lead sources"><i class="ti ti-file-import" style="font-size:15px;" aria-hidden="true"></i></div>
+      <div class="gs-nav active" title="Manage leads"><i class="ti ti-database" style="font-size:15px;" aria-hidden="true"></i></div>
+      <div class="gs-nav" title="Broadcasts"><i class="ti ti-speakerphone" style="font-size:15px;" aria-hidden="true"></i></div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.12);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">N</div>
+  </div>
+  <div style="flex:1;padding:26px 30px;display:flex;flex-direction:column;gap:18px;">
+    <div>
+      <p class="gs-mono" style="font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin:0 0 7px;">CRM review</p>
+      <h1 style="font-size:25px;">Manage leads</h1>
+      <p style="font-size:13px;color:var(--ink2);margin:6px 0 0;">From <span class="gs-mono">leads_export_july.csv</span>, imported 2 minutes ago.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div class="gs-card" style="padding:14px;">
+        <p class="gs-mono" style="font-size:9.5px;text-transform:uppercase;color:var(--ink2);letter-spacing:0.04em;margin:0 0 6px;">total</p>
+        <p style="font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:0;">142</p>
+      </div>
+      <div class="gs-card" style="padding:14px;">
+        <p class="gs-mono" style="font-size:9.5px;text-transform:uppercase;color:var(--accent);letter-spacing:0.04em;margin:0 0 6px;">imported</p>
+        <p style="font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:0;color:var(--accent);">136</p>
+      </div>
+      <div class="gs-card" style="padding:14px;">
+        <p class="gs-mono" style="font-size:9.5px;text-transform:uppercase;color:var(--warn);letter-spacing:0.04em;margin:0 0 6px;">skipped</p>
+        <p style="font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:0;color:var(--warn);">4</p>
+      </div>
+      <div class="gs-card" style="padding:14px;">
+        <p class="gs-mono" style="font-size:9.5px;text-transform:uppercase;color:var(--danger);letter-spacing:0.04em;margin:0 0 6px;">errored</p>
+        <p style="font-size:20px;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:0;color:var(--danger);">2</p>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;">
+        <span class="gs-tab active">All 142</span>
+        <span class="gs-tab">Imported 136</span>
+        <span class="gs-tab">Skipped 4</span>
+        <span class="gs-tab">Errored 2</span>
+      </div>
+      <button style="background:transparent;border:1px solid var(--border);color:var(--ink2);font-size:12px;font-weight:500;padding:7px 12px;border-radius:8px;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;">
+        <i class="ti ti-download" style="font-size:14px;" aria-hidden="true"></i>Export skipped
+      </button>
+    </div>
+    <div class="gs-card" style="overflow:hidden;">
+      <div style="display:flex;background:var(--surface);">
+        <span class="gs-mono" style="flex:1.3;padding:9px 12px;font-size:10.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:0.03em;">name</span>
+        <span class="gs-mono" style="flex:1.6;padding:9px 12px;font-size:10.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:0.03em;">email</span>
+        <span class="gs-mono" style="flex:1;padding:9px 12px;font-size:10.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:0.03em;">status</span>
+        <span class="gs-mono" style="flex:1.4;padding:9px 12px;font-size:10.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:0.03em;">note</span>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span class="gs-cell" style="flex:1.3;">John Doe</span>
+        <span class="gs-cell gs-mono" style="flex:1.6;color:var(--ink2);">john.doe@example.com</span>
+        <span class="gs-cell" style="flex:1;"><span style="background:var(--accent-bg);color:var(--accent);font-size:10.5px;padding:2px 8px;border-radius:6px;">good lead</span></span>
+        <span class="gs-cell" style="flex:1.4;color:var(--ink2);">Reschedule demo</span>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <span class="gs-cell" style="flex:1.3;">Priya Singh</span>
+        <span class="gs-cell gs-mono" style="flex:1.6;color:var(--ink2);">priya.singh@example.com</span>
+        <span class="gs-cell" style="flex:1;"><span style="background:var(--accent-bg);color:var(--accent);font-size:10.5px;padding:2px 8px;border-radius:6px;">sale done</span></span>
+        <span class="gs-cell" style="flex:1.4;color:var(--ink2);">Onboarding in progress</span>
+      </div>
+      <div style="display:flex;align-items:center;background:var(--warn-bg);">
+        <span class="gs-cell" style="flex:1.3;background:transparent;">Rahul Mehta</span>
+        <span class="gs-cell gs-mono" style="flex:1.6;color:var(--ink2);background:transparent;">—</span>
+        <span class="gs-cell" style="flex:1;background:transparent;"><span style="background:var(--warn);color:#fff;font-size:10.5px;padding:2px 8px;border-radius:6px;">skipped</span></span>
+        <span class="gs-cell" style="flex:1.4;color:var(--warn);background:transparent;">No email or phone found</span>
+      </div>
+      <div style="display:flex;align-items:center;background:var(--danger-bg);">
+        <span class="gs-cell" style="flex:1.3;background:transparent;border-bottom:none;">Batch 9, row 4</span>
+        <span class="gs-cell gs-mono" style="flex:1.6;color:var(--ink2);background:transparent;border-bottom:none;">—</span>
+        <span class="gs-cell" style="flex:1;background:transparent;border-bottom:none;"><span style="background:var(--danger);color:#fff;font-size:10.5px;padding:2px 8px;border-radius:6px;">errored</span></span>
+        <span class="gs-cell" style="flex:1.4;color:var(--danger);background:transparent;border-bottom:none;display:flex;align-items:center;justify-content:space-between;gap:6px;">AI timeout<i class="ti ti-refresh" style="font-size:13px;cursor:pointer;" aria-hidden="true"></i></span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>

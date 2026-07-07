@@ -1,0 +1,13 @@
+{
+  "extends": "../Docs/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"],
+    "outDir": "dist",
+    "paths": {
+      "@groweasy/shared": ["./shared/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "vitest.config.ts"]
+}
