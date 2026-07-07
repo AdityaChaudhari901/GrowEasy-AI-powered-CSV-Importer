@@ -464,6 +464,9 @@ Do not expose API keys to the browser. Do not commit `.env` files.
 - Replaced the root `README.md` with a complete project README:
   - Documents product flow, exact tech stack, frontend/backend architecture, data contract, setup, env vars, Docker, deployment, API shape, testing, and security notes.
   - Keeps `Docs/README.md`, `Docs/ARCHITECTURE.md`, and `Docs/Context.md` as deeper references instead of making the root README a thin pointer.
+- Fixed Render Docker build packaging:
+  - `Dockerfile.backend` and `Dockerfile.frontend` now copy `Docs/tsconfig.base.json` before building `Backend/shared`.
+  - This keeps the image build aligned with local TypeScript config inheritance and prevents Render from failing during declaration generation with missing `/app/Docs/tsconfig.base.json`.
 
 ## Context Maintenance Rule
 

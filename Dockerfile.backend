@@ -2,6 +2,8 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+COPY Docs/tsconfig.base.json Docs/tsconfig.base.json
+
 COPY Backend/shared/package*.json Backend/shared/
 RUN npm --prefix Backend/shared ci
 
