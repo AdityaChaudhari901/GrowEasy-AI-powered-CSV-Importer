@@ -1,16 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useVirtualRows } from "@/components/ui/use-virtual-rows";
 import type { CsvPreview } from "../types";
 import {
   CSV_PREVIEW_COPY,
   CSV_PREVIEW_DELIMITER_LABELS,
   CSV_PREVIEW_EMPTY_CELL_VALUE,
   CSV_PREVIEW_FORMULA_ESCAPE_PATTERN,
-  CSV_PREVIEW_MAX_VISIBLE_PAGE_BUTTONS,
   CSV_PREVIEW_NUMBER_FORMAT_LOCALE,
-  CSV_PREVIEW_REQUIRED_COLUMN_KEYS,
-  CSV_PREVIEW_ROWS_PER_PAGE,
   CSV_PREVIEW_TABLE_LAYOUT
 } from "../utils/csv-preview-table-config";
 
@@ -18,46 +15,22 @@ type CsvPreviewTableProps = {
   preview: CsvPreview;
 };
 
-type PreviewColumn = {
-  key: string;
-  sourceColumn: string;
-};
-
 const numberFormatter = new Intl.NumberFormat(CSV_PREVIEW_NUMBER_FORMAT_LOCALE);
 
 export function CsvPreviewTable({ preview }: CsvPreviewTableProps) {
-  const [pageIndex, setPageIndex] = useState(0);
-  const pageCount = Math.max(
-    Math.ceil(preview.rows.length / CSV_PREVIEW_ROWS_PER_PAGE),
-    1
-  );
-  const safePageIndex = Math.min(pageIndex, pageCount - 1);
-  const pageStartIndex = safePageIndex * CSV_PREVIEW_ROWS_PER_PAGE;
-  const pageRows = preview.rows.slice(
-    pageStartIndex,
-    pageStartIndex + CSV_PREVIEW_ROWS_PER_PAGE
-  );
-  const tableColumns = useMemo(
-    () => selectPreviewColumns(preview.columns),
-    [preview.columns]
-  );
-  const displayedColumnNames = new Set(
-    tableColumns.map(({ sourceColumn }) => sourceColumn)
-  );
-  const hiddenColumnCount = preview.columns.filter(
-    (column) => !displayedColumnNames.has(column)
-  ).length;
-  const missingLeadColumnCount = Math.max(
-    CSV_PREVIEW_REQUIRED_COLUMN_KEYS.length - tableColumns.length,
-    0
-  );
-  const firstVisibleRow = pageRows.length ? pageStartIndex + 1 : 0;
-  const lastVisibleRow = pageStartIndex + pageRows.length;
-  const pageNumbers = getVisiblePageNumbers(safePageIndex, pageCount);
-
-  const goToPage = (nextPageIndex: number) => {
-    setPageIndex(Math.max(0, Math.min(nextPageIndex, pageCount - 1)));
-  };
+  const visibleRowsValue = preview.rows.length
+    ? `${numberFormatter.format(preview.rows.length)} of ${numberFormatter.format(
+        preview.rowCount
+      )}`
+    : "0";
+  const firstVisibleRow = preview.rows.length ? 1 : 0;
+  const lastVisibleRow = preview.rows.length;
+  const virtualRows = useVirtualRows({
+    rowCount: preview.rows.length,
+    rowHeight: 30,
+    overscan: 12,
+    defaultViewportHeight: 360
+  });
 
   return (
     <div className="space-y-2.5">
@@ -95,35 +68,28 @@ export function CsvPreviewTable({ preview }: CsvPreviewTableProps) {
         />
         <PreviewStat
           label={CSV_PREVIEW_COPY.stats.preview}
-          value={`${numberFormatter.format(CSV_PREVIEW_ROWS_PER_PAGE)} ${CSV_PREVIEW_COPY.previewPerPageSuffix}`}
+          value={visibleRowsValue}
         />
       </div>
 
-      {missingLeadColumnCount > 0 || hiddenColumnCount > 0 ? (
-        <p className="rounded-lg bg-[var(--panel-muted)] px-3 py-2 text-xs font-semibold text-[var(--muted)]">
-          {CSV_PREVIEW_COPY.leadFieldsNotice}
-          {hiddenColumnCount > 0
-            ? `; ${numberFormatter.format(hiddenColumnCount)} ${CSV_PREVIEW_COPY.hiddenHeadersNotice}`
-            : ""}
-          {missingLeadColumnCount > 0
-            ? `; ${numberFormatter.format(missingLeadColumnCount)} ${CSV_PREVIEW_COPY.missingLeadFieldsNotice}`
-            : ""}
-          .
-        </p>
-      ) : null}
+      <p className="rounded-lg bg-[var(--panel-muted)] px-3 py-2 text-xs font-semibold text-[var(--muted)]">
+        {CSV_PREVIEW_COPY.allFieldsNotice}.
+      </p>
 
       <div
         className="rounded-xl border border-[var(--border)] bg-[var(--panel)]"
         data-testid="csv-preview-sample"
       >
-        {pageRows.length > 0 ? (
+        {preview.rows.length > 0 ? (
           <div
             className={CSV_PREVIEW_TABLE_LAYOUT.scrollContainerClassName}
             data-testid="csv-preview-scroll"
+            ref={virtualRows.setScrollElement}
+            onScroll={virtualRows.handleScroll}
           >
             <table
               aria-label={CSV_PREVIEW_COPY.tableAriaLabel}
-              className="w-full table-fixed border-separate border-spacing-0 text-left text-xs"
+              className="w-max min-w-full border-separate border-spacing-0 text-left text-xs"
             >
               <thead className="sticky top-0 z-10 bg-[var(--panel-muted)]">
                 <tr>
@@ -133,38 +99,63 @@ export function CsvPreviewTable({ preview }: CsvPreviewTableProps) {
                   >
                     #
                   </th>
-                  {tableColumns.map((column) => (
+                  {preview.columns.map((column, columnIndex) => (
                     <th
-                      key={column.key}
+                      key={`${column}-${columnIndex}`}
                       scope="col"
-                      className="break-words border-b border-l border-[var(--border)] px-2 py-2 font-[var(--font-mono)] text-[9px] font-semibold leading-tight text-[var(--muted)]"
+                      className="min-w-[140px] break-words border-b border-l border-[var(--border)] px-2 py-2 font-[var(--font-mono)] text-[9px] font-semibold leading-tight text-[var(--muted)]"
                     >
-                      {column.key}
+                      {column}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {pageRows.map((row, index) => (
-                  <tr
-                    key={`preview-row-${pageStartIndex + index}`}
-                    className="odd:bg-[var(--panel)] even:bg-[var(--surface-wash)]"
-                  >
-                    <td className="border-b border-[var(--border-soft)] px-2 py-1.5 font-[var(--font-mono)] text-[10px] font-semibold text-[var(--teal-strong)]">
-                      {pageStartIndex + index + 1}
-                    </td>
-                    {tableColumns.map((column) => (
-                      <td
-                        key={`${pageStartIndex + index}-${column.key}`}
-                        className="border-b border-l border-[var(--border-soft)] px-2 py-1.5 font-medium text-[var(--muted-strong)]"
-                      >
-                        <span className="block truncate">
-                          {getCellValue(row, column.sourceColumn)}
-                        </span>
-                      </td>
-                    ))}
+                {virtualRows.paddingTop > 0 ? (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={preview.columns.length + 1}
+                      className="border-0 p-0"
+                      style={{ height: virtualRows.paddingTop }}
+                    />
                   </tr>
-                ))}
+                ) : null}
+                {virtualRows.items.map(({ index }) => {
+                  const row = preview.rows[index];
+                  if (!row) {
+                    return null;
+                  }
+
+                  return (
+                    <tr
+                      key={`preview-row-${index}`}
+                      className="odd:bg-[var(--panel)] even:bg-[var(--surface-wash)]"
+                    >
+                      <td className="border-b border-[var(--border-soft)] px-2 py-1.5 font-[var(--font-mono)] text-[10px] font-semibold text-[var(--teal-strong)]">
+                        {index + 1}
+                      </td>
+                      {preview.columns.map((column, columnIndex) => (
+                        <td
+                          key={`${index}-${column}-${columnIndex}`}
+                          className="min-w-[140px] border-b border-l border-[var(--border-soft)] px-2 py-1.5 font-medium text-[var(--muted-strong)]"
+                        >
+                          <span className="block truncate">
+                            {getCellValue(row, column)}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                {virtualRows.paddingBottom > 0 ? (
+                  <tr aria-hidden="true">
+                    <td
+                      colSpan={preview.columns.length + 1}
+                      className="border-0 p-0"
+                      style={{ height: virtualRows.paddingBottom }}
+                    />
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -183,54 +174,6 @@ export function CsvPreviewTable({ preview }: CsvPreviewTableProps) {
           {CSV_PREVIEW_COPY.rowRangeJoiner}{" "}
           {numberFormatter.format(preview.rowCount)}
         </p>
-
-        <nav
-          aria-label={CSV_PREVIEW_COPY.paginationAriaLabel}
-          className="flex flex-wrap items-center gap-1.5"
-        >
-          <button
-            type="button"
-            className="h-8 rounded-lg border border-[var(--border)] bg-[var(--panel)] px-2.5 text-xs font-bold text-[var(--muted-strong)] disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={safePageIndex === 0}
-            onClick={() => goToPage(safePageIndex - 1)}
-          >
-            {CSV_PREVIEW_COPY.previousPage}
-          </button>
-          {pageNumbers.map((pageNumber) => {
-            const isCurrent = pageNumber - 1 === safePageIndex;
-
-            return (
-              <button
-                type="button"
-                key={pageNumber}
-                aria-current={isCurrent ? "page" : undefined}
-                className={[
-                  "h-8 min-w-8 rounded-lg border px-2 text-xs font-extrabold",
-                  isCurrent
-                    ? "border-[var(--teal)] bg-[var(--teal)] text-white"
-                    : "border-[var(--border)] bg-[var(--panel)] text-[var(--muted-strong)]"
-                ].join(" ")}
-                onClick={() => goToPage(pageNumber - 1)}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className="h-8 rounded-lg border border-[var(--border)] bg-[var(--panel)] px-2.5 text-xs font-bold text-[var(--muted-strong)] disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={safePageIndex >= pageCount - 1}
-            onClick={() => goToPage(safePageIndex + 1)}
-          >
-            {CSV_PREVIEW_COPY.nextPage}
-          </button>
-          <span className="ml-1 text-xs font-bold text-[var(--muted)]">
-            {CSV_PREVIEW_COPY.pagePrefix}{" "}
-            {numberFormatter.format(safePageIndex + 1)}{" "}
-            {CSV_PREVIEW_COPY.rowRangeJoiner}{" "}
-            {numberFormatter.format(pageCount)}
-          </span>
-        </nav>
       </div>
 
       {preview.errors.length ? (
@@ -253,46 +196,6 @@ function PreviewStat({ label, value }: { label: string; value: string }) {
       </p>
     </div>
   );
-}
-
-function selectPreviewColumns(columns: string[]): PreviewColumn[] {
-  const sourceByNormalizedColumn = new Map(
-    columns.map((column) => [normalizeColumnName(column), column])
-  );
-
-  const selected = CSV_PREVIEW_REQUIRED_COLUMN_KEYS.flatMap((key) => {
-    const sourceColumn = sourceByNormalizedColumn.get(normalizeColumnName(key));
-    return sourceColumn ? [{ key, sourceColumn }] : [];
-  });
-
-  if (selected.length > 0) {
-    return selected;
-  }
-
-  return columns
-    .slice(0, CSV_PREVIEW_REQUIRED_COLUMN_KEYS.length)
-    .map((column) => ({
-      key: column,
-      sourceColumn: column
-    }));
-}
-
-function getVisiblePageNumbers(currentPageIndex: number, pageCount: number) {
-  const maxButtonCount = Math.min(
-    CSV_PREVIEW_MAX_VISIBLE_PAGE_BUTTONS,
-    pageCount
-  );
-  const preferredStart = currentPageIndex - Math.floor(maxButtonCount / 2);
-  const start = Math.max(
-    0,
-    Math.min(preferredStart, pageCount - maxButtonCount)
-  );
-
-  return Array.from({ length: maxButtonCount }, (_, index) => start + index + 1);
-}
-
-function normalizeColumnName(column: string) {
-  return column.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function getCellValue(row: Record<string, string>, column: string) {

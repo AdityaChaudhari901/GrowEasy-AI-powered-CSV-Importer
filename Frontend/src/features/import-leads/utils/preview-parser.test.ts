@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   detectCsvDelimiter,
   parseCsvPreview
@@ -32,6 +32,24 @@ describe("parseCsvPreview", () => {
     );
 
     await expect(parseCsvPreview(file)).rejects.toThrow(/duplicate header/i);
+  });
+
+  it("reports incremental parsing progress", async () => {
+    const onProgress = vi.fn();
+    const rows = Array.from(
+      { length: 205 },
+      (_, index) => `Lead ${index + 1},lead.${index + 1}@example.com`
+    );
+    const file = new File([["Name,Email", ...rows].join("\n")], "leads.csv", {
+      type: "text/csv"
+    });
+
+    const preview = await parseCsvPreview(file, { onProgress });
+
+    expect(preview.rowCount).toBe(205);
+    expect(onProgress).toHaveBeenCalledWith({ rowsParsed: 100 });
+    expect(onProgress).toHaveBeenCalledWith({ rowsParsed: 200 });
+    expect(onProgress).toHaveBeenLastCalledWith({ rowsParsed: 205 });
   });
 });
 

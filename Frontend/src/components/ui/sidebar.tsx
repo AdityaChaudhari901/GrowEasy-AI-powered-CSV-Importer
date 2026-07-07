@@ -81,7 +81,7 @@ export function Sidebar({
 export function SidebarBody({ className, ...props }: SidebarBodyProps) {
   return (
     <div
-      className={cn("flex h-full flex-col overflow-hidden px-3 py-5", className)}
+      className={cn("flex h-full flex-col overflow-hidden px-2.5 py-4", className)}
       {...props}
     />
   );
@@ -99,11 +99,11 @@ export function DesktopSidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-screen shrink-0 overflow-hidden border-r border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)] shadow-sm lg:flex",
+        "sticky top-0 hidden h-screen shrink-0 overflow-hidden border-r border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] lg:flex",
         className
       )}
       style={{
-        width: open ? 248 : 72,
+        width: open ? 216 : 76,
         transition: animate
           ? "width 280ms cubic-bezier(0.22, 1, 0.36, 1)"
           : undefined,
@@ -139,12 +139,13 @@ export function SidebarLink({
     <a
       href={link.href}
       className={cn(
-        "group/sidebar-link flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2",
+        "group/sidebar-link flex min-h-10 items-center rounded-xl text-sm font-bold transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2",
+        open ? "justify-start gap-2 px-2" : "justify-center px-0",
         className
       )}
       {...props}
     >
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors">
         {link.icon}
       </span>
       <span

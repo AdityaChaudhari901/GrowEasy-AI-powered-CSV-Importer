@@ -1,28 +1,15 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type {
-  CrmLeadRecord,
-  ErroredRecord,
-  SkippedRecord
+import {
+  CRM_FIELD_KEYS,
+  type CrmLeadRecord,
+  type ErroredRecord,
+  type SkippedRecord
 } from "@groweasy/shared";
 import { useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
-
-const statusTone = (status: CrmLeadRecord["crm_status"]) => {
-  if (status === "SALE_DONE") {
-    return "info";
-  }
-  if (status === "GOOD_LEAD_FOLLOW_UP") {
-    return "success";
-  }
-  if (status === "BAD_LEAD") {
-    return "danger";
-  }
-  return "neutral";
-};
 
 export const getLeadRecordKey = (record: CrmLeadRecord) =>
   [
@@ -46,12 +33,17 @@ export function ParsedRecordsTable({
   onSelectRecord
 }: ParsedRecordsTableProps) {
   const columns = useMemo<ColumnDef<CrmLeadRecord>[]>(
-    () => [
-      {
-        accessorKey: "name",
-        header: "Lead Name",
+    () =>
+      CRM_FIELD_KEYS.map((key) => ({
+        accessorKey: key,
+        header: key,
         cell: ({ row }) => {
           const record = row.original;
+
+          if (key !== "name") {
+            return getLeadReviewCellValue(record, key);
+          }
+
           const recordKey = getLeadRecordKey(record);
           const isSelected = recordKey === selectedRecordKey;
 
@@ -75,45 +67,7 @@ export function ParsedRecordsTable({
             </button>
           );
         }
-      },
-      {
-        accessorKey: "email",
-        header: "Email",
-        cell: ({ row }) => row.original.email || "-"
-      },
-      {
-        id: "contact",
-        header: "Contact",
-        cell: ({ row }) =>
-          row.original.mobile_without_country_code
-            ? `${row.original.country_code} ${row.original.mobile_without_country_code}`.trim()
-            : "-"
-      },
-      {
-        accessorKey: "company",
-        header: "Company",
-        cell: ({ row }) => row.original.company || "-"
-      },
-      {
-        accessorKey: "crm_status",
-        header: "Status",
-        cell: ({ row }) => (
-          <Badge tone={statusTone(row.original.crm_status)}>
-            {row.original.crm_status.replaceAll("_", " ")}
-          </Badge>
-        )
-      },
-      {
-        accessorKey: "data_source",
-        header: "Source",
-        cell: ({ row }) => row.original.data_source || "-"
-      },
-      {
-        accessorKey: "crm_note",
-        header: "CRM Note",
-        cell: ({ row }) => row.original.crm_note || "-"
-      }
-    ],
+      })),
     [onSelectRecord, selectedRecordKey]
   );
 
@@ -123,8 +77,16 @@ export function ParsedRecordsTable({
       columns={columns}
       emptyLabel="No imported records yet."
       maxHeightClassName="max-h-[520px]"
+      minWidthClassName="min-w-[2040px]"
     />
   );
+}
+
+function getLeadReviewCellValue(
+  record: CrmLeadRecord,
+  key: (typeof CRM_FIELD_KEYS)[number]
+) {
+  return String(record[key] || "-");
 }
 
 type IssueRecord = SkippedRecord | ErroredRecord;

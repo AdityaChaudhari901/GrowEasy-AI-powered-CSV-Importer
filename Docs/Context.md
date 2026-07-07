@@ -11,8 +11,8 @@ The assignment evaluates AI extraction accuracy, backend quality, frontend polis
 ## Core Product Flow
 
 1. Upload a CSV through drag and drop or file picker.
-2. Parse and preview the CSV in the browser.
-3. Show a bounded, scrollable CSV preview with pagination before any AI call.
+2. Parse and preview the CSV incrementally in the browser.
+3. Show a bounded, virtualized, scrollable CSV preview before any AI call.
 4. Wait for user confirmation.
 5. Send the CSV to the backend only after confirmation.
 6. Process records through an AI model in batches.
@@ -61,9 +61,9 @@ Skip any record with neither email nor mobile number.
 ## Assignment Compliance Snapshot
 
 - Frontend supports CSV upload from Lead Sources only.
-- Browser preview parses the selected CSV before any backend or AI call.
+- Browser preview parses the selected CSV before any backend or AI call and reports row-level parse progress.
 - Browser preview detects comma, semicolon, and tab delimiters, strips BOM headers, and blocks duplicate or empty headers.
-- The preview modal uses a scrollable paginated table that prioritizes the GrowEasy lead-review fields and shows page controls.
+- The preview modal uses a scrollable virtualized table that shows every parsed CSV column without pagination controls.
 - Confirming `Import & Process with AI` sends the original CSV to the backend after explicit user consent.
 - Successful import redirects to `#manage-leads` and renders normalized CRM records.
 - The import modal shows a four-step Upload / Preview / Confirm / Process stepper and keeps the confirmation footer visible.
@@ -142,10 +142,11 @@ Color world:
 UI components to build:
 
 - App shell with sidebar matching reference structure.
+  - Desktop sidebar uses a compact hover-expanded rail, quiet borders, small brand block, and tight nav rows without bottom helper copy.
 - Import modal with upload state and preview state.
 - CSV drop zone with file picker fallback.
-- Scrollable paginated CSV preview for the import modal.
-- Responsive data tables with sticky headers for Manage Leads results.
+- Virtualized scrollable CSV preview for the import modal.
+- Responsive virtualized data tables with sticky headers for Manage Leads results.
 - Import progress section for AI batch processing.
 - Results summary cards for total/imported/skipped/errored totals.
 - Parsed records table.
@@ -178,7 +179,8 @@ Docs/
 - lucide-react for icons
 - Papa Parse for browser CSV preview
 - TanStack Table for table structure
-- TanStack Virtual for large CSV/table virtualization
+- Custom fixed-row virtualization for large CSV/table rendering
+- Persisted light/dark theme toggle
 - React Hook Form only if forms become complex
 
 ### Backend
@@ -213,6 +215,8 @@ Docs/
 
 - Web: Vercel.
 - API: Railway or Render.
+- Docker setup: root `Dockerfile.frontend`, `Dockerfile.backend`, `docker-compose.yml`, and `.dockerignore`.
+- Render API Blueprint: root `render.yaml` using the backend Dockerfile.
 - Keep the backend stateless for the first version.
 - Optional database later only if import history or user auth becomes required.
 
@@ -389,9 +393,17 @@ Do not expose API keys to the browser. Do not commit `.env` files.
   - Live Vertex API smoke with a semicolon CSV from `Origin: http://127.0.0.1:3000` returned 1 imported, 1 skipped, 0 errored rows, and deterministic `batchId: "rows-2-3"`.
 - Applied the expanded production UI guide:
   - Import modal now shows a persistent Upload / Preview / Confirm / Process stepper with compact mobile step text.
-  - Confirmation actions are pinned in a sticky footer and explicitly state that AI processing starts only after confirmation.
+  - Confirmation actions are pinned in a sticky footer without extra helper copy.
   - Drag-and-drop now rejects multi-file drops with a specific message and visually distinguishes invalid dragged files.
+  - Browser preview parsing uses Papa Parse step callbacks and updates row-count progress while parsing.
   - Manage Leads now includes outcome filters for All, Imported, Skipped, and Errored views.
+  - Manage Leads now uses the full workspace width instead of a centered outer card, removes provider-specific extraction copy from the heading area, and lets the records table span the full review panel by default; the two-column table/detail layout is only used after a lead is selected.
+  - Manage Leads includes a CRM review toolbar with full-record search plus filters for created date, city, state, country, and CRM status; controls filter imported CRM records without changing import summary totals.
+  - Confirmed import completion surfaces through one app-level toast after extraction finishes; result filter tabs do not trigger additional "Imported rows", "Nothing skipped", or "Nothing errored" toasts. CSV/API failures still surface through app-level toast notifications.
+  - Frontend copy is now provider-neutral: upload, processing, and Manage Leads text should say AI/extraction/processing without naming the underlying model provider.
+  - CSV Preview and Manage Leads tables show every available column and row through virtualized scroll containers; no CSV headers are hidden and no preview rows are hidden behind pagination.
+  - App shell now includes a persisted dark mode toggle with dark-mode design tokens.
+  - Docker deployment assets were added for frontend/backend images, local compose runs, and Render API deployment via `render.yaml`.
 - Applied `Docs/references/groweasy_lead_import_redesign.html` as a UI reference:
   - Global tokens now use the warm off-white surface, quieter beige borders, and reference-inspired heading/mono typography.
   - Desktop sidebar is a slimmer icon rail with compact active states.
@@ -420,12 +432,18 @@ Do not expose API keys to the browser. Do not commit `.env` files.
   - Removed page-level demo metrics and demo CSV download actions so the screen stays upload-first.
   - Removed the extra `Header intelligence` / `GrowEasy CRM output` mapping panel so Lead Sources stays focused on upload.
 - Removed the Lead Sources `Flexible import coverage` / `Works with messy lead exports` source-list panel after user feedback; backend support and regression tests for messy export formats remain in place.
-- Replaced the modal CSV preview with a bounded paginated table:
-  - Shows file stats and a 50-row-per-page preview of the configured lead-review columns.
+- Replaced the modal CSV preview with a bounded scrollable table:
+  - Shows file stats and renders every parsed CSV column and row, regardless of file shape.
+  - Preview stats now show the actual visible row count such as `2 of 2` or `100 of 100` instead of the confusing `50 / page` label.
+  - Pagination controls are not used; vertical and horizontal scroll handle large row/column counts.
+  - Scrollable CSV preview, result tables, modal body, and result tabs hide native scrollbar chrome while preserving vertical and horizontal scrolling.
   - Keeps overflow contained inside the preview table so the modal footer remains usable.
   - Keeps the "No data has been sent anywhere yet" safety state before confirmation.
-- Kept `Download Sample CSV Template` as a header-only GrowEasy CSV template and removed demo CSV download actions from Lead Sources and the upload modal.
+- Kept `Download Sample CSV Template` as a header-only GrowEasy CSV template and restored a modal-only `Download 100 Rows CSV` action backed by generated demo rows.
 - Replaced the custom upload drop zone with Aceternity `FileUpload`, keeping the same CSV-only validation and local preview flow.
+- Restyled the Aceternity uploader for the white GrowEasy modal: removed the dark demo grid/tile, reduced the upload surface height, and kept a subtle teal dashed target.
+- Removed the Aceternity hover/lift animation from the uploader so the white modal stays calm and static.
+- Simplified the upload modal empty state into one compact dashed upload surface, a thin helper strip, and non-wrapping CSV/template download actions.
 - Strengthened deterministic fallback mapping for common export headers such as `created_time`, `customer phone`, `campaign_name`, `deal stage`, `assigned agent`, `property type`, `UTM Source`, `First Name`, and `Last Name`.
 - Added backend regression coverage proving Facebook Lead Export, Google Ads Export, Excel sheets, Real Estate CRM exports, Sales reports, Marketing agency CSVs, and manually created spreadsheets normalize into GrowEasy CRM fields.
 - Replaced the fixed desktop icon rail with an Aceternity-style collapsible sidebar primitive:
@@ -434,6 +452,18 @@ Do not expose API keys to the browser. Do not commit `.env` files.
   - Reused the existing GrowEasy logo asset and avoided the demo Dashboard/Profile/Settings/Logout links from the reference snippet.
   - Removed the bottom `GE / GrowEasy CRM` profile-style link and smoothed hover expansion with an explicit width transition plus animated logo/link labels.
   - Made the desktop sidebar `sticky top-0` and removed internal nav scrolling so it stays fixed while main content scrolls.
+  - Tightened desktop sidebar spacing: smaller nav offset, smaller item gap, shorter link height, and reduced icon-label gap.
+  - Added root body hydration-warning suppression for browser-extension-injected attributes such as `cz-shortcut-listen`.
+- Fixed dark/light mode behavior and icon placement:
+  - `ThemeProvider` now reads saved/system preference before persisting, so a saved dark theme is not overwritten by the initial light render.
+  - Added a local Magic UI-style `AnimatedThemeToggler` at `Frontend/src/components/ui/animated-theme-toggler.tsx` using a circle View Transitions reveal where supported and a normal theme switch fallback elsewhere.
+  - The desktop theme icon now lives in the sidebar's bottom utility area; mobile keeps the toggle in the header.
+  - Added focused tests for saved dark-mode initialization and the animated circle theme toggle.
+  - Dark mode now uses explicit control/accent contrast tokens (`--control-active`, `--control-active-foreground`, `--on-teal`, `--on-orange`) so active tabs, sidebar items, and buttons do not reuse foreground text color as a background.
+  - Removed hardcoded light modal border styling so import modal surfaces use theme tokens in both light and dark modes.
+- Replaced the root `README.md` with a complete project README:
+  - Documents product flow, exact tech stack, frontend/backend architecture, data contract, setup, env vars, Docker, deployment, API shape, testing, and security notes.
+  - Keeps `Docs/README.md`, `Docs/ARCHITECTURE.md`, and `Docs/Context.md` as deeper references instead of making the root README a thin pointer.
 
 ## Context Maintenance Rule
 

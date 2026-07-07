@@ -2,12 +2,15 @@
 
 import { FileSpreadsheet, Loader2, X } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/components/feedback/toast-provider";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/lib/utils";
 import { useCsvImport } from "../hooks/use-csv-import";
 import type { CsvPreview, ImportSuccessPayload } from "../types";
 import { parseCsvPreview } from "../utils/preview-parser";
 import {
+  demoCsv,
+  demoCsvFilename,
   templateCsv,
   templateCsvFilename
 } from "../utils/sample-data";
@@ -36,7 +39,9 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
   const [preview, setPreview] = useState<CsvPreview | null>(null);
   const [parseError, setParseError] = useState("");
   const [isParsing, setIsParsing] = useState(false);
+  const [parsedRows, setParsedRows] = useState(0);
   const importMutation = useCsvImport();
+  const { toast } = useToast();
 
   if (!open) {
     return null;
@@ -47,6 +52,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
     setPreview(null);
     setParseError("");
     setIsParsing(false);
+    setParsedRows(0);
     importMutation.reset();
   };
 
@@ -62,34 +68,50 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
     setParseError("");
     importMutation.reset();
 
+    const rejectFile = (message: string) => {
+      setParseError(message);
+      toast({
+        title: "CSV upload blocked",
+        description: message,
+        tone: "danger"
+      });
+    };
+
     if (!selectedFile.name.toLowerCase().endsWith(".csv")) {
-      setParseError("Upload a valid .csv file.");
+      rejectFile("Upload a valid .csv file.");
       return;
     }
 
     if (!allowedMimeTypes.has(selectedFile.type)) {
-      setParseError("Upload a CSV file exported as text/csv.");
+      rejectFile("Upload a CSV file exported as text/csv.");
       return;
     }
 
     if (selectedFile.size === 0) {
-      setParseError("CSV file is empty.");
+      rejectFile("CSV file is empty.");
       return;
     }
 
     if (selectedFile.size > maxFileBytes) {
-      setParseError("CSV file exceeds the 10MB limit.");
+      rejectFile("CSV file exceeds the 10MB limit.");
       return;
     }
 
     setFile(selectedFile);
     setPreview(null);
+    setParsedRows(0);
     setIsParsing(true);
 
     try {
-      setPreview(await parseCsvPreview(selectedFile));
+      setPreview(
+        await parseCsvPreview(selectedFile, {
+          onProgress({ rowsParsed }) {
+            setParsedRows(rowsParsed);
+          }
+        })
+      );
     } catch (error) {
-      setParseError(
+      rejectFile(
         error instanceof Error ? error.message : "Unable to parse this CSV."
       );
     } finally {
@@ -101,6 +123,13 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
     downloadCsvFile({
       filename: templateCsvFilename,
       contents: templateCsv
+    });
+  };
+
+  const handleDownloadDemoCsv = () => {
+    downloadCsvFile({
+      filename: demoCsvFilename,
+      contents: demoCsv
     });
   };
 
@@ -136,6 +165,13 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
         });
         reset();
         onClose();
+      },
+      onError(error) {
+        toast({
+          title: "Import failed",
+          description: error.message,
+          tone: "danger"
+        });
       }
     });
   };
@@ -162,7 +198,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="import-modal-title"
-        className="flex max-h-[calc(100vh-56px)] w-full max-w-[1080px] flex-col overflow-hidden rounded-[14px] border border-white/80 bg-[var(--panel)] shadow-[var(--shadow)] sm:max-h-[calc(100vh-64px)]"
+        className="flex max-h-[calc(100vh-56px)] w-full max-w-[1080px] flex-col overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow)] sm:max-h-[calc(100vh-64px)]"
       >
         <div className="shrink-0 border-b border-[var(--border-soft)] p-3 sm:p-4">
           <div className="mb-3 flex items-start justify-between gap-4">
@@ -174,7 +210,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
                 Import Leads via CSV
               </h2>
               <p className="mt-0.5 text-sm font-medium leading-5 text-[var(--muted)]">
-                Preview first. Vertex extraction starts only after confirmation.
+                Preview first. AI extraction starts only after confirmation.
               </p>
             </div>
             <Button
@@ -228,7 +264,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
           </ol>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+        <div className="no-visible-scrollbar min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
           {file ? (
             <div className="mb-3 flex items-center gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-wash)] p-2.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--teal-faint)] text-[var(--teal)]">
@@ -251,6 +287,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
                   setFile(null);
                   setPreview(null);
                   setParseError("");
+                  setParsedRows(0);
                   importMutation.reset();
                 }}
               >
@@ -265,8 +302,16 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
               isParsing={isParsing}
               error={parseError}
               onFileSelected={handleFileSelected}
-              onReject={setParseError}
+              onReject={(message) => {
+                setParseError(message);
+                toast({
+                  title: "CSV upload blocked",
+                  description: message,
+                  tone: "danger"
+                });
+              }}
               onDownloadTemplate={handleDownloadTemplate}
+              onDownloadDemoCsv={handleDownloadDemoCsv}
             />
           ) : null}
 
@@ -274,7 +319,9 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-wash)] p-6">
               <div className="flex items-center gap-3 text-sm font-extrabold text-[var(--teal)]">
                 <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                Reading CSV preview
+                {parsedRows > 0
+                  ? `Reading CSV preview: ${parsedRows.toLocaleString("en-IN")} rows parsed`
+                  : "Reading CSV preview"}
               </div>
               <div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--panel)]">
                 <div className="h-full w-2/3 animate-pulse rounded-full bg-[var(--teal)]" />
@@ -288,7 +335,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
             <div className="mt-4 rounded-xl border border-[var(--orange-soft)] bg-[var(--orange-soft)] p-4">
               <div className="flex items-center gap-3 text-sm font-extrabold text-[var(--orange-strong)]">
                 <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
-                Processing confirmed CSV with Vertex extraction
+                Processing confirmed CSV with AI extraction
               </div>
               <div className="mt-4 grid gap-2 text-xs font-bold text-[var(--muted)] sm:grid-cols-3">
                 <span>1. Upload accepted</span>
@@ -306,11 +353,6 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
         </div>
 
         <div className="grid shrink-0 gap-2 border-t border-[var(--border-soft)] bg-[var(--panel)] p-3 shadow-[0_-12px_28px_rgb(20_59_53_/_8%)] sm:grid-cols-[1fr_1.25fr] sm:p-4">
-          <p className="order-first rounded-lg bg-[var(--teal-faint)] px-3 py-2 text-xs font-semibold leading-5 text-[var(--teal-strong)] sm:col-span-2">
-            {preview
-              ? `${preview.rowCount} rows x ${preview.columnCount} columns ready. AI processing starts only after confirmation.`
-              : "Preview happens locally first. No backend or AI call runs on file selection."}
-          </p>
           <Button
             variant="outline"
             size="lg"
@@ -326,7 +368,7 @@ export function ImportModal({ open, onClose, onSuccess }: ImportModalProps) {
             onClick={submit}
           >
             {importMutation.isPending
-              ? "Processing with Vertex"
+              ? "Processing"
               : "Confirm Import"}
           </Button>
         </div>

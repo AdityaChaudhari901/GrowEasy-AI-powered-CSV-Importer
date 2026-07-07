@@ -1,0 +1,38 @@
+FROM node:22-alpine AS build
+
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+WORKDIR /app
+
+COPY Backend/shared/package*.json Backend/shared/
+RUN npm --prefix Backend/shared ci
+
+COPY Backend/shared Backend/shared
+RUN npm --prefix Backend/shared run build
+
+COPY Frontend/package*.json Frontend/
+RUN npm --prefix Frontend ci
+
+COPY Frontend Frontend
+RUN npm --prefix Frontend run build
+
+FROM node:22-alpine AS runtime
+
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+WORKDIR /app
+
+COPY Backend/shared/package*.json Backend/shared/
+COPY --from=build /app/Backend/shared/dist Backend/shared/dist
+RUN npm --prefix Backend/shared ci --omit=dev
+
+COPY Frontend/package*.json Frontend/
+RUN npm --prefix Frontend ci --omit=dev
+
+COPY --from=build /app/Frontend/.next Frontend/.next
+COPY --from=build /app/Frontend/next.config.ts Frontend/next.config.ts
+
+EXPOSE 3000
+
+CMD ["npm", "--prefix", "Frontend", "run", "start"]

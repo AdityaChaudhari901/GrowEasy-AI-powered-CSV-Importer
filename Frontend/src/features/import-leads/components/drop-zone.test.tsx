@@ -15,6 +15,7 @@ describe("DropZone", () => {
         onFileSelected={handleFileSelected}
         onReject={handleReject}
         onDownloadTemplate={() => undefined}
+        onDownloadDemoCsv={() => undefined}
       />
     );
 
@@ -30,10 +31,11 @@ describe("DropZone", () => {
     expect(handleReject).not.toHaveBeenCalled();
   });
 
-  it("renders the template download button without demo CSV download", () => {
+  it("renders both CSV download actions", () => {
     const handleFileSelected = vi.fn();
     const handleReject = vi.fn();
     const handleDownloadTemplate = vi.fn();
+    const handleDownloadDemoCsv = vi.fn();
 
     render(
       <DropZone
@@ -43,17 +45,19 @@ describe("DropZone", () => {
         onFileSelected={handleFileSelected}
         onReject={handleReject}
         onDownloadTemplate={handleDownloadTemplate}
+        onDownloadDemoCsv={handleDownloadDemoCsv}
       />
     );
 
     fireEvent.click(
+      screen.getByRole("button", { name: "Download 100 Rows CSV" })
+    );
+    fireEvent.click(
       screen.getByRole("button", { name: "Download Sample CSV Template" })
     );
 
+    expect(handleDownloadDemoCsv).toHaveBeenCalledTimes(1);
     expect(handleDownloadTemplate).toHaveBeenCalledTimes(1);
-    expect(
-      screen.queryByRole("button", { name: /download .* rows csv/i })
-    ).not.toBeInTheDocument();
     expect(handleFileSelected).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,10 @@ export type CsvPreview = {
   errors: string[];
 };
 
+export type CsvPreviewProgress = {
+  rowsParsed: number;
+};
+
 export type ImportResult = ImportResponse;
 
 export type ImportSuccessPayload = {

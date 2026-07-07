@@ -1,7 +1,7 @@
 "use client";
 
 import Papa from "papaparse";
-import type { CsvPreview } from "../types";
+import type { CsvPreview, CsvPreviewProgress } from "../types";
 
 const csvDelimiters = [",", ";", "\t"] as const;
 const clientMaxRows = 5000;
@@ -118,7 +118,26 @@ const decodeCsvFile = async (file: File) => {
   }
 };
 
-export const parseCsvPreview = async (file: File): Promise<CsvPreview> => {
+type ParseCsvPreviewOptions = {
+  onProgress?: (progress: CsvPreviewProgress) => void;
+};
+
+const normalizeParsedRow = (row: Record<string, unknown>) =>
+  Object.entries(row).reduce<Record<string, string>>(
+    (accumulator, [key, value]) => {
+      const cleanKey = cleanCell(key);
+      if (cleanKey && cleanKey !== "__parsed_extra") {
+        accumulator[cleanKey] = cleanCell(value);
+      }
+      return accumulator;
+    },
+    {}
+  );
+
+export const parseCsvPreview = async (
+  file: File,
+  options: ParseCsvPreviewOptions = {}
+): Promise<CsvPreview> => {
   const csvText = await decodeCsvFile(file);
 
   if (!csvText.trim()) {
@@ -133,31 +152,36 @@ export const parseCsvPreview = async (file: File): Promise<CsvPreview> => {
   });
   const columns = validateHeaders(headerResult.data[0] ?? []);
 
+  const rows: Record<string, string>[] = [];
+  const parseErrors: string[] = [];
+  let exceededRowLimit = false;
+
   const results = Papa.parse<Record<string, unknown>>(csvText, {
     delimiter,
     header: true,
     skipEmptyLines: true,
-    transformHeader: cleanCell
-  });
+    transformHeader: cleanCell,
+    step(result, parser) {
+      parseErrors.push(...result.errors.map((error) => error.message));
+      rows.push(normalizeParsedRow(result.data));
 
-  const rows = results.data.map((row) =>
-    Object.entries(row).reduce<Record<string, string>>(
-      (accumulator, [key, value]) => {
-        const cleanKey = cleanCell(key);
-        if (cleanKey && cleanKey !== "__parsed_extra") {
-          accumulator[cleanKey] = cleanCell(value);
-        }
-        return accumulator;
-      },
-      {}
-    )
-  );
+      if (rows.length % 100 === 0) {
+        options.onProgress?.({ rowsParsed: rows.length });
+      }
+
+      if (rows.length > clientMaxRows) {
+        exceededRowLimit = true;
+        parser.abort();
+      }
+    }
+  });
+  options.onProgress?.({ rowsParsed: rows.length });
 
   if (rows.length === 0) {
     throw new Error("CSV must include at least one data row.");
   }
 
-  if (rows.length > clientMaxRows) {
+  if (exceededRowLimit || rows.length > clientMaxRows) {
     throw new Error(
       `CSV has ${rows.length} rows. The browser preview limit is ${clientMaxRows}.`
     );
@@ -169,6 +193,9 @@ export const parseCsvPreview = async (file: File): Promise<CsvPreview> => {
     rowCount: rows.length,
     columnCount: columns.length,
     delimiter,
-    errors: results.errors.map((error) => error.message)
+    errors: [
+      ...parseErrors,
+      ...results.errors.map((error) => error.message)
+    ]
   };
 };

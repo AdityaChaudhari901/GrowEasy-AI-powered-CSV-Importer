@@ -10,6 +10,20 @@ AI-powered CSV importer for GrowEasy CRM leads. The app lets an operator upload 
 - Shared contracts: `Backend/shared` Zod schemas and CRM constants
 - Tests: Vitest, React Testing Library, Supertest
 
+## Feature Coverage
+
+- Drag-and-drop CSV upload with file picker fallback.
+- Browser-side CSV preview before upload or AI processing.
+- Incremental Papa Parse row processing with visible parse progress.
+- Progress indicators for browser parsing and confirmed AI extraction.
+- Retry mechanism for failed AI batches with bounded concurrency and diagnostics.
+- Virtualized CSV preview and CRM result tables for large files.
+- Dark mode toggle with persisted user preference.
+- Unit and integration tests for parsing, upload UI, filters, table behavior, backend parsing, normalization, and API routes.
+- Docker setup for the frontend, backend, and local production-style compose runs.
+- Deployment path for Vercel frontend plus Render/Railway-style API hosting.
+- README setup, environment, API, verification, Docker, and deployment instructions.
+
 ## Project Structure
 
 ```text
@@ -22,6 +36,10 @@ Docs/                   Project docs, shared tooling config, and orchestration s
   README.md             Setup, API, env vars, verification, deployment
   ARCHITECTURE.md       System design, data flow, and security notes
   Context.md            Working project context and change log
+Dockerfile.backend      Production Docker image for the Express API
+Dockerfile.frontend     Production Docker image for the Next.js frontend
+docker-compose.yml      Local production-style frontend + API run
+render.yaml             Render Blueprint for the API service
 ```
 
 ## Setup
@@ -78,7 +96,7 @@ LLM_PROVIDER=local-fallback
 
 ## Core Flow
 
-1. Browser parses the selected CSV with Papa Parse for preview only.
+1. Browser parses the selected CSV incrementally with Papa Parse for preview only.
 2. No AI request is made during preview.
 3. On confirmation, the original CSV file is uploaded to `POST /api/imports/extract`.
 4. The API validates file type and size, then reparses the CSV server-side.
@@ -178,6 +196,31 @@ npm --prefix Docs run build
 npm --prefix Docs run audit:prod
 ```
 
+## Docker
+
+Build the API image:
+
+```bash
+docker build -f Dockerfile.backend -t groweasy-api .
+```
+
+Build the frontend image:
+
+```bash
+docker build \
+  -f Dockerfile.frontend \
+  --build-arg NEXT_PUBLIC_API_URL=http://localhost:4000 \
+  -t groweasy-web .
+```
+
+Run both services locally with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The compose file runs the API with `LLM_PROVIDER=local-fallback` by default so the stack works without cloud credentials. For Vertex AI in a hosted environment, set `LLM_PROVIDER=vertex`, `VERTEX_PROJECT_ID`, `VERTEX_LOCATION`, `VERTEX_MODEL`, and Google Application Default Credentials or `GOOGLE_APPLICATION_CREDENTIALS`.
+
 Current audit status:
 
 - `npm --prefix Docs run audit:prod` exits cleanly: no high or critical production advisories in Backend or Frontend.
@@ -197,10 +240,24 @@ Latest local verification on 2026-07-07:
 
 Recommended first deployment:
 
-- Web: Vercel from `Frontend`
-- API: Railway or Render from `Backend`
-- Set `NEXT_PUBLIC_API_URL` on Vercel to the deployed API URL
-- Set `CORS_ORIGIN` on the API to the deployed frontend URL
+- Web: Vercel from `Frontend`, with `NEXT_PUBLIC_API_URL` set to the deployed API URL before build.
+- API: Render or Railway from `Backend`, or Render via the root `render.yaml` Blueprint and `Dockerfile.backend`.
+- Set `CORS_ORIGIN` on the API to the deployed frontend URL.
 - Store Google service-account credentials only in the API hosting environment or use Workload Identity on Google Cloud
+
+Render API deployment:
+
+1. Push this repository to GitHub.
+2. In Render, create a Blueprint from `render.yaml`.
+3. Set `CORS_ORIGIN` to the final frontend URL.
+4. Set Vertex credentials through Google ADC / `GOOGLE_APPLICATION_CREDENTIALS` or use `LLM_PROVIDER=local-fallback` for a deterministic demo deployment.
+5. After deployment, verify `https://<api-host>/health`.
+
+Vercel frontend deployment:
+
+1. Create a Vercel project for `Frontend`.
+2. Set `NEXT_PUBLIC_API_URL=https://<api-host>`.
+3. Build with `npm run build`.
+4. After deployment, confirm CSV preview works and confirmed imports reach the API.
 
 The first version is stateless. Add a database only when import history, user accounts, audit trails, or saved mappings become required.

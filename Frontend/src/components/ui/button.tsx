@@ -13,13 +13,13 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--teal)] text-white shadow-sm hover:bg-[var(--teal-strong)] focus-visible:ring-[var(--teal)]",
+    "bg-[var(--teal)] text-[var(--on-teal)] shadow-sm hover:bg-[var(--teal-strong)] focus-visible:ring-[var(--teal)]",
   secondary:
     "bg-[var(--teal-soft)] text-[var(--teal-strong)] hover:bg-[var(--teal-faint)] focus-visible:ring-[var(--teal)]",
   ghost:
     "bg-transparent text-[var(--muted-strong)] hover:bg-[var(--panel-muted)] focus-visible:ring-[var(--teal)]",
   orange:
-    "bg-[var(--orange)] text-white shadow-sm hover:bg-[var(--orange-strong)] focus-visible:ring-[var(--orange)]",
+    "bg-[var(--orange)] text-[var(--on-orange)] shadow-sm hover:bg-[var(--orange-strong)] focus-visible:ring-[var(--orange)]",
   outline:
     "border border-[var(--border)] bg-[var(--panel)] text-[var(--foreground)] hover:bg-[var(--panel-muted)] focus-visible:ring-[var(--teal)]"
 };

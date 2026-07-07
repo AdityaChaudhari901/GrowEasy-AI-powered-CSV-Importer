@@ -2,6 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { ToastProvider } from "@/components/feedback/toast-provider";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 type ProvidersProps = {
   children: React.ReactNode;
@@ -22,5 +24,11 @@ export function Providers({ children }: ProvidersProps) {
       })
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
 }

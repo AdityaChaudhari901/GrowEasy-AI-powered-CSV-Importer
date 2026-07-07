@@ -1,28 +1,22 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { CRM_FIELD_KEYS } from "@groweasy/shared";
 import type { CsvPreview } from "../types";
-import {
-  CSV_PREVIEW_COPY,
-  CSV_PREVIEW_REQUIRED_COLUMN_KEYS,
-  CSV_PREVIEW_ROWS_PER_PAGE
-} from "../utils/csv-preview-table-config";
+import { CSV_PREVIEW_COPY } from "../utils/csv-preview-table-config";
 import { CsvPreviewTable } from "./csv-preview-table";
 
 const extraPreviewColumns = [
-  "crm_status",
-  "crm_note",
-  "data_source",
-  "possession_time",
-  "description"
+  "custom_budget",
+  "utm_campaign"
 ];
 
 const previewColumns = [
-  ...CSV_PREVIEW_REQUIRED_COLUMN_KEYS,
+  ...CRM_FIELD_KEYS,
   ...extraPreviewColumns
 ];
 const secondPageRowCount = 10;
-const totalPreviewRows = CSV_PREVIEW_ROWS_PER_PAGE + secondPageRowCount;
-const secondPageFirstRow = CSV_PREVIEW_ROWS_PER_PAGE + 1;
+const totalPreviewRows = 50 + secondPageRowCount;
+const secondPageFirstRow = 51;
 
 const makePreview = (rowCount: number): CsvPreview => {
   const rows = Array.from({ length: rowCount }, (_, index) => {
@@ -43,7 +37,9 @@ const makePreview = (rowCount: number): CsvPreview => {
       crm_note: `Note ${rowNumber}`,
       data_source: "leads_on_demand",
       possession_time: "-",
-      description: `Description ${rowNumber}`
+      description: `Description ${rowNumber}`,
+      custom_budget: `Budget ${rowNumber}`,
+      utm_campaign: `Campaign ${rowNumber}`
     };
   });
 
@@ -58,52 +54,45 @@ const makePreview = (rowCount: number): CsvPreview => {
 };
 
 describe("CsvPreviewTable", () => {
-  it("renders configured scrollable lead rows with required columns and page controls", () => {
+  it("renders every parsed CSV column and row in one scrollable table", () => {
     render(<CsvPreviewTable preview={makePreview(totalPreviewRows)} />);
 
     const table = screen.getByRole("table", {
       name: CSV_PREVIEW_COPY.tableAriaLabel
     });
-    const pageNav = screen.getByRole("navigation", {
-      name: CSV_PREVIEW_COPY.paginationAriaLabel
-    });
 
-    for (const column of CSV_PREVIEW_REQUIRED_COLUMN_KEYS) {
+    for (const column of previewColumns) {
       expect(
         within(table).getByRole("columnheader", { name: column })
       ).toBeInTheDocument();
     }
 
-    expect(
-      screen.getByText(
-        new RegExp(
-          `${extraPreviewColumns.length} ${CSV_PREVIEW_COPY.hiddenHeadersNotice}`
-        )
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByText(`${CSV_PREVIEW_COPY.allFieldsNotice}.`)).toBeInTheDocument();
     expect(screen.getByTestId("csv-preview-scroll")).toHaveClass("overflow-auto");
-    expect(
-      screen.getByText(`Rows 1-${CSV_PREVIEW_ROWS_PER_PAGE} of ${totalPreviewRows}`)
-    ).toBeInTheDocument();
-    expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
-    expect(screen.getByText("Lead 1")).toBeInTheDocument();
-    expect(screen.getByText(`Lead ${CSV_PREVIEW_ROWS_PER_PAGE}`)).toBeInTheDocument();
-    expect(screen.queryByText(`Lead ${secondPageFirstRow}`)).not.toBeInTheDocument();
-    expect(screen.getAllByText("+91")).toHaveLength(CSV_PREVIEW_ROWS_PER_PAGE);
-
-    fireEvent.click(
-      within(pageNav).getByRole("button", {
-        name: CSV_PREVIEW_COPY.nextPage
-      })
+    expect(screen.getByTestId("csv-preview-scroll")).toHaveClass(
+      "no-visible-scrollbar"
     );
-
+    expect(screen.getByText("60 of 60")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        `Rows ${secondPageFirstRow}-${totalPreviewRows} of ${totalPreviewRows}`
-      )
+      screen.getByText(`Rows 1-${totalPreviewRows} of ${totalPreviewRows}`)
     ).toBeInTheDocument();
-    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
-    expect(screen.getByText(`Lead ${secondPageFirstRow}`)).toBeInTheDocument();
-    expect(screen.queryByText(`Lead ${CSV_PREVIEW_ROWS_PER_PAGE}`)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation")
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Lead 1")).toBeInTheDocument();
+    expect(screen.getByText("Lead 37")).toBeInTheDocument();
+    expect(screen.queryByText("Lead 50")).not.toBeInTheDocument();
+    expect(screen.queryByText(`Lead ${secondPageFirstRow}`)).not.toBeInTheDocument();
+    expect(screen.queryByText(`Lead ${totalPreviewRows}`)).not.toBeInTheDocument();
+    expect(screen.getByText("Budget 1")).toBeInTheDocument();
+    expect(screen.queryByText(`Campaign ${totalPreviewRows}`)).not.toBeInTheDocument();
+    expect(screen.getAllByText("+91").length).toBeLessThan(totalPreviewRows);
+  });
+
+  it("shows the actual visible row count for small files", () => {
+    render(<CsvPreviewTable preview={makePreview(2)} />);
+
+    expect(screen.getByText("2 of 2")).toBeInTheDocument();
+    expect(screen.getByText("Rows 1-2 of 2")).toBeInTheDocument();
   });
 });

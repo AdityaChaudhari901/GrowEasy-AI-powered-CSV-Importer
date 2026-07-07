@@ -2,17 +2,25 @@
 
 import { type CrmLeadRecord, type ImportSummary } from "@groweasy/shared";
 import {
-  CheckCircle2,
   Database,
   Download,
   FileSpreadsheet,
   Upload
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from "react";
+import { useToast } from "@/components/feedback/toast-provider";
 import { Button } from "@/components/ui/button";
 import type { ImportResult, ImportSuccessPayload } from "../types";
+import {
+  DEFAULT_LEAD_RECORD_FILTERS,
+  countActiveLeadFilters,
+  filterLeadRecords,
+  getLeadRecordFilterOptions,
+  type LeadRecordFilterKey,
+  type LeadRecordFilters
+} from "../utils/lead-record-filters";
 import { ImportModal } from "./import-modal";
+import { LeadReviewControls } from "./lead-review-controls";
 import { LeadDetailPanel } from "./lead-detail-panel";
 import {
   downloadIssueRowsCsv,
@@ -25,10 +33,12 @@ import {
 type ResultView = "all" | "imported" | "skipped" | "errored";
 type ImportContext = Omit<ImportSuccessPayload, "result">;
 type WorkspacePage = "lead-sources" | "manage-leads";
+type ToastFn = ReturnType<typeof useToast>["toast"];
 
 const numberFormatter = new Intl.NumberFormat("en-IN");
 
 export function ImportWorkspace() {
+  const { toast } = useToast();
   const [activePage, setActivePage] = useState<WorkspacePage>(() =>
     getPageFromHash()
   );
@@ -39,7 +49,24 @@ export function ImportWorkspace() {
     null
   );
   const [activeResultView, setActiveResultView] = useState<ResultView>("all");
+  const [leadSearchQuery, setLeadSearchQuery] = useState("");
+  const [leadFilters, setLeadFilters] = useState<LeadRecordFilters>(
+    DEFAULT_LEAD_RECORD_FILTERS
+  );
   const records = result?.records ?? [];
+  const filteredRecords = useMemo(
+    () => filterLeadRecords(records, leadSearchQuery, leadFilters),
+    [records, leadSearchQuery, leadFilters]
+  );
+  const leadFilterOptions = useMemo(
+    () => getLeadRecordFilterOptions(records),
+    [records]
+  );
+  const activeLeadFilterCount = countActiveLeadFilters(
+    leadSearchQuery,
+    leadFilters
+  );
+  const hasActiveLeadFilters = activeLeadFilterCount > 0;
   const selectedRecordKey = selectedRecord
     ? getLeadRecordKey(selectedRecord)
     : undefined;
@@ -69,16 +96,56 @@ export function ImportWorkspace() {
     setImportContext(nextImportContext);
     setSelectedRecord(null);
     setActiveResultView("all");
+    setLeadSearchQuery("");
+    setLeadFilters(DEFAULT_LEAD_RECORD_FILTERS);
     setActivePage("manage-leads");
+    showImportOutcomeToast(nextResult.summary, toast);
 
     if (window.location.hash !== "#manage-leads") {
       window.location.hash = "manage-leads";
     }
   };
 
+  const handleResultViewChange = (view: ResultView) => {
+    if (view === activeResultView) {
+      return;
+    }
+
+    setActiveResultView(view);
+    if (view !== "all" && view !== "imported") {
+      setSelectedRecord(null);
+    }
+  };
+
+  const handleLeadSearchChange = (value: string) => {
+    setLeadSearchQuery(value);
+    setSelectedRecord(null);
+  };
+
+  const handleLeadFilterChange = (key: LeadRecordFilterKey, value: string) => {
+    setLeadFilters((currentFilters) => ({
+      ...currentFilters,
+      [key]: value
+    }));
+    setSelectedRecord(null);
+  };
+
+  const clearLeadFilters = () => {
+    setLeadSearchQuery("");
+    setLeadFilters(DEFAULT_LEAD_RECORD_FILTERS);
+    setSelectedRecord(null);
+  };
+
   return (
     <div className="px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-      <div className="mx-auto w-full max-w-[1080px] space-y-5">
+      <div
+        className={[
+          "w-full space-y-5",
+          activePage === "manage-leads"
+            ? "mx-0 max-w-none"
+            : "mx-auto max-w-[1080px]"
+        ].join(" ")}
+      >
         {activePage === "lead-sources" ? (
           <section
             className="w-full scroll-mt-28 overflow-hidden rounded-[18px] border border-[var(--border)] bg-[var(--background)] shadow-[var(--shadow-soft)]"
@@ -94,8 +161,8 @@ export function ImportWorkspace() {
                     Lead Sources
                   </h1>
                   <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-[var(--muted)]">
-                    Upload any lead CSV, preview it locally, then let Vertex map
-                    messy source columns into GrowEasy records after approval.
+                    Upload any lead CSV, preview it locally, then map messy
+                    source columns into GrowEasy records after approval.
                   </p>
                 </div>
               </div>
@@ -144,10 +211,10 @@ export function ImportWorkspace() {
 
         {activePage === "manage-leads" ? (
           <section
-            className="scroll-mt-28 rounded-[18px] border border-[var(--border)] bg-[var(--background)] p-5 shadow-[var(--shadow-soft)] sm:p-7"
+            className="scroll-mt-28"
             id="manage-leads"
           >
-            <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="mb-5">
               <div>
                 <p className="font-[var(--font-mono)] text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--teal-strong)]">
                   CRM review
@@ -165,17 +232,6 @@ export function ImportWorkspace() {
                   </p>
                 )}
               </div>
-              {result ? (
-                <Badge
-                  tone={
-                    result.summary.aiProvider === "vertex" ? "info" : "warning"
-                  }
-                >
-                  {result.summary.aiProvider === "vertex"
-                    ? "Vertex AI extraction"
-                    : "Local fallback"}
-                </Badge>
-              ) : null}
             </div>
 
             <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -184,15 +240,24 @@ export function ImportWorkspace() {
               ))}
             </div>
 
+            {result && records.length > 0 ? (
+              <LeadReviewControls
+                searchQuery={leadSearchQuery}
+                filters={leadFilters}
+                filterOptions={leadFilterOptions}
+                totalCount={records.length}
+                filteredCount={filteredRecords.length}
+                activeFilterCount={activeLeadFilterCount}
+                onSearchChange={handleLeadSearchChange}
+                onFilterChange={handleLeadFilterChange}
+                onClearFilters={clearLeadFilters}
+              />
+            ) : null}
+
             <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <ResultViewTabs
                 activeView={activeResultView}
-                onChange={(view) => {
-                  setActiveResultView(view);
-                  if (view !== "all" && view !== "imported") {
-                    setSelectedRecord(null);
-                  }
-                }}
+                onChange={handleResultViewChange}
                 counts={{
                   all: result?.summary.totalRows ?? 0,
                   imported: result?.summary.imported ?? 0,
@@ -219,19 +284,33 @@ export function ImportWorkspace() {
 
             {shouldShowImported && records.length > 0 ? (
               <section>
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
-                  <ParsedRecordsTable
-                    records={records}
-                    selectedRecordKey={selectedRecordKey}
-                    onSelectRecord={setSelectedRecord}
-                  />
-                  {selectedRecord ? (
-                    <LeadDetailPanel
-                      lead={selectedRecord}
-                      onClose={() => setSelectedRecord(null)}
+                {filteredRecords.length > 0 ? (
+                  <div
+                    className={[
+                      "grid gap-4",
+                      selectedRecord
+                        ? "xl:grid-cols-[minmax(0,1fr)_390px]"
+                        : "xl:grid-cols-1"
+                    ].join(" ")}
+                  >
+                    <ParsedRecordsTable
+                      records={filteredRecords}
+                      selectedRecordKey={selectedRecordKey}
+                      onSelectRecord={setSelectedRecord}
                     />
-                  ) : null}
-                </div>
+                    {selectedRecord ? (
+                      <LeadDetailPanel
+                        lead={selectedRecord}
+                        onClose={() => setSelectedRecord(null)}
+                      />
+                    ) : null}
+                  </div>
+                ) : (
+                  <NoFilteredRecordsPanel
+                    hasActiveFilters={hasActiveLeadFilters}
+                    onClearFilters={clearLeadFilters}
+                  />
+                )}
               </section>
             ) : !result ? (
               <EmptyRecordsPanel hasResult={Boolean(result)} />
@@ -250,15 +329,6 @@ export function ImportWorkspace() {
                     </div>
                     <SkippedRecordsTable skipped={result.skipped} />
                   </section>
-                ) : shouldShowSkipped ? (
-                  <OutcomeNotice
-                    title="Nothing skipped"
-                    copy={
-                      result.errored.length > 0
-                        ? "Rows that could not be processed are listed under errored records."
-                        : "Every source row imported cleanly."
-                    }
-                  />
                 ) : null}
 
                 {shouldShowErrored && result.errored.length > 0 ? (
@@ -283,11 +353,6 @@ export function ImportWorkspace() {
                     </div>
                     <ErroredRecordsTable errored={result.errored} />
                   </section>
-                ) : shouldShowErrored && activeResultView === "errored" ? (
-                  <OutcomeNotice
-                    title="Nothing errored"
-                    copy="No AI or pipeline failures were reported for this import."
-                  />
                 ) : null}
               </div>
             ) : null}
@@ -336,7 +401,7 @@ function ResultViewTabs({
   return (
     <div
       aria-label="Filter import results"
-      className="flex w-full gap-1 overflow-x-auto rounded-[10px] border border-[var(--border)] bg-[var(--surface-wash)] p-1 lg:w-auto"
+      className="no-visible-scrollbar flex w-full gap-1 overflow-x-auto rounded-[10px] border border-[var(--border)] bg-[var(--surface-wash)] p-1 lg:w-auto"
       role="tablist"
     >
       {views.map((view) => {
@@ -349,7 +414,7 @@ function ResultViewTabs({
             className={[
               "min-h-9 shrink-0 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus)] focus-visible:ring-offset-2",
               isActive
-                ? "bg-[var(--foreground)] text-white shadow-sm"
+                ? "bg-[var(--control-active)] text-[var(--control-active-foreground)] shadow-sm"
                 : "text-[var(--muted)] hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
             ].join(" ")}
             onClick={() => onChange(view.value)}
@@ -421,16 +486,38 @@ function EmptyRecordsPanel({ hasResult }: { hasResult: boolean }) {
   );
 }
 
-function OutcomeNotice({ title, copy }: { title: string; copy: string }) {
+function NoFilteredRecordsPanel({
+  hasActiveFilters,
+  onClearFilters
+}: {
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
+}) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-[var(--border)] bg-[var(--green-soft)] p-4 text-[var(--teal-strong)]">
-      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-      <div>
-        <p className="text-sm font-extrabold">{title}</p>
-        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--muted-strong)]">
-          {copy}
-        </p>
+    <div className="flex flex-col gap-4 rounded-2xl border border-dashed border-[var(--border-strong)] bg-[var(--panel-inset)] p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--teal-soft)] text-[var(--teal-strong)]">
+          <Database className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-[var(--foreground)]">
+            No matching leads
+          </h3>
+          <p className="mt-1 text-sm font-medium leading-6 text-[var(--muted)]">
+            Adjust search or filters to bring CRM records back into view.
+          </p>
+        </div>
       </div>
+      {hasActiveFilters ? (
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          onClick={onClearFilters}
+        >
+          Clear filters
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -448,22 +535,36 @@ function getSummaryMetrics(summary: ImportSummary | undefined) {
   ];
 }
 
+function showImportOutcomeToast(summary: ImportSummary, toast: ToastFn) {
+  const tone =
+    summary.errored > 0 ? "danger" : summary.skipped > 0 ? "warning" : "success";
+
+  toast({
+    title: "Extraction complete",
+    description: `${numberFormatter.format(summary.imported)} imported, ${numberFormatter.format(
+      summary.skipped
+    )} skipped, ${numberFormatter.format(summary.errored)} errored from ${numberFormatter.format(
+      summary.totalRows
+    )} source rows.`,
+    tone
+  });
+}
+
 function getImportSourceLine(
   importContext: ImportContext | null,
   summary: ImportSummary
 ) {
-  const provider = summary.aiProvider.replace("-", " ");
   const duration = numberFormatter.format(summary.durationMs);
 
   if (!importContext) {
-    return `Extracted with ${provider} in ${duration}ms.`;
+    return `Processed in ${duration}ms.`;
   }
 
   return `From ${importContext.fileName}, imported ${formatRelativeTime(
     importContext.importedAt
   )}. ${numberFormatter.format(importContext.rowCount)} source rows x ${numberFormatter.format(
     importContext.columnCount
-  )} columns processed with ${provider} in ${duration}ms.`;
+  )} columns processed in ${duration}ms.`;
 }
 
 function formatRelativeTime(value: string) {
